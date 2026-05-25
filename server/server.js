@@ -11,19 +11,21 @@ const habitRoutes =
   require('./routes/habit.routes')
 
 const analyticsRoutes =
-  require('./routes/analytics.routes')
+require('./routes/analytics.routes')
 
 const app = express()
 
-app.use(cors())
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}))
 
 app.use(express.json())
 
 app.use('/api/auth', authRoutes)
 
 app.use('/api/habits', habitRoutes)
-
-console.log(analyticsRoutes)
 
 app.use(
   '/api/analytics',

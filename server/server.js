@@ -11,35 +11,83 @@ const habitRoutes =
   require('./routes/habit.routes')
 
 const analyticsRoutes =
-require('./routes/analytics.routes')
+  require('./routes/analytics.routes')
 
 const app = express()
 
+// CORS
+
 app.use(cors({
+
   origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+
+  methods: [
+
+    'GET',
+    'POST',
+    'PUT',
+    'DELETE'
+
+  ],
+
   credentials: true
+
 }))
+
+// BODY PARSER
 
 app.use(express.json())
 
-app.use('/api/auth', authRoutes)
+// ROUTES
 
-app.use('/api/habits', habitRoutes)
+app.use(
+  '/api/auth',
+  authRoutes
+)
+
+app.use(
+  '/api/habits',
+  habitRoutes
+)
 
 app.use(
   '/api/analytics',
   analyticsRoutes
 )
 
+// HEALTH CHECK
+
 app.get('/', (req, res) => {
 
   res.json({
+
+    success: true,
+
     message:
-      'Backend running successfully'
+      'Streak+ API running successfully'
+
   })
 
 })
+
+// GLOBAL ERROR HANDLER
+
+app.use((err, req, res, next) => {
+
+  console.error(err)
+
+  res.status(500).json({
+
+    success: false,
+
+    message:
+      'Internal server error'
+
+  })
+
+})
+
+// START SERVER
 
 const PORT =
   process.env.PORT || 5000
@@ -47,7 +95,9 @@ const PORT =
 app.listen(PORT, () => {
 
   console.log(
-    `Server running on port ${PORT}`
+
+    `🚀 Server running on port ${PORT}`
+
   )
 
 })

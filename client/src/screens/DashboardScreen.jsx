@@ -1,142 +1,222 @@
 import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import Header from '../components/core/Header'
-import SummaryBar from '../components/core/SummaryBar'
 import HabitList from '../components/core/HabitList'
 import AddHabitSheet from '../components/bottomsheet/AddHabitSheet'
 import useHabitStore from '../store/useHabitStore'
 
-const TODAY_ISO = new Date().toISOString().split('T')[0]
+const TODAY_ISO  = new Date().toISOString().split('T')[0]
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+const CIRC       = 2 * Math.PI * 44   // r=44 in 100×100 viewBox
 
-// Circumference of SVG ring (r=52): 2 * PI * 52 ≈ 326.7
-const CIRC = 2 * Math.PI * 52
+const MILESTONE_NAMES = {
+  7: 'Sprout', 14: 'Builder', 21: 'Habit',
+  30: 'Warrior', 60: 'Champion', 100: 'Legend', 200: 'Master', 365: 'Obsidian',
+}
 
+function nextMilestone(streak) {
+  return [7, 14, 21, 30, 60, 100, 200, 365].find(m => m > streak) || null
+}
+
+// ── Streak ring ─────────────────────────────────────────────────────────────
 function StreakRing({ streak }) {
-  const fraction  = Math.min(streak / 365, 1)
-  const offset    = CIRC * (1 - fraction)
-  const ringRef   = useRef(null)
+  const next     = nextMilestone(streak) || Math.max(streak, 1)
+  const fraction = Math.min(streak / next, 1)
+  const offset   = CIRC * (1 - fraction)
+  const ringRef  = useRef(null)
 
   useEffect(() => {
     if (!ringRef.current) return
-    ringRef.current.style.setProperty('--ring-offset', String(offset))
-    ringRef.current.style.strokeDashoffset = CIRC  // start full-empty
+    ringRef.current.style.strokeDashoffset = CIRC
     requestAnimationFrame(() => {
       if (!ringRef.current) return
-      ringRef.current.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(0.34,1.56,0.64,1)'
+      ringRef.current.style.transition = 'stroke-dashoffset 1.3s cubic-bezier(0.34,1.2,0.64,1)'
       ringRef.current.style.strokeDashoffset = offset
     })
   }, [offset])
 
   return (
-    <div className="relative w-28 h-28 flex-shrink-0">
-      <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-        {/* Track */}
-        <circle cx="60" cy="60" r="52" fill="none" stroke="#1c1508" strokeWidth="10" />
-        {/* Fill */}
+    <div className="relative w-24 h-24 flex-shrink-0">
+      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+        <circle cx="50" cy="50" r="44" fill="none" stroke="#1c1508" strokeWidth="8" />
         <circle
           ref={ringRef}
-          cx="60" cy="60" r="52"
-          fill="none"
-          stroke="#DBAD28"
-          strokeWidth="10"
+          cx="50" cy="50" r="44"
+          fill="none" stroke="#DBAD28" strokeWidth="8"
           strokeLinecap="round"
           strokeDasharray={CIRC}
           strokeDashoffset={CIRC}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl leading-none">🔥</span>
-        <span className="font-heading text-lg text-white leading-tight mt-0.5">{streak}</span>
-        <span className="text-[9px] text-zinc-500 leading-none">days</span>
+        <span className="font-heading text-[26px] text-white leading-none">{streak}</span>
+        <span className="text-[9px] text-zinc-500 uppercase tracking-wider mt-0.5">days</span>
       </div>
     </div>
   )
 }
 
-function WeekStrip({ weekSummary }) {
-  return (
-    <div className="flex gap-2 mt-5">
-      {weekSummary.map(({ date, completedCount, totalHabits }, i) => {
-        const isToday = date === TODAY_ISO
-        const pct     = totalHabits === 0 ? 0 : completedCount / totalHabits
-        const dotColor =
-          pct === 0   ? 'bg-surface2'
-          : pct < 0.5 ? 'bg-teal/30'
-          : pct < 1   ? 'bg-teal/70'
-          :              'bg-teal'
+// ── Hero copy + pills ───────────────────────────────────────────────────────
+function HeroCopy({ streak, personalBest }) {
+  const next        = nextMilestone(streak)
+  const daysToNext  = next ? next - streak : null
+  const isPersonalBest = streak > 0 && streak >= personalBest
 
-        return (
-          <div key={date} className="flex-1 flex flex-col items-center gap-1.5">
-            <span className="text-[10px] text-zinc-500">{DAY_LABELS[i]}</span>
-            <div className={`w-7 h-7 rounded-full transition-all duration-300 ${dotColor} ${
-              isToday ? 'ring-2 ring-gold ring-offset-1 ring-offset-bg' : ''
-            }`} />
-          </div>
-        )
-      })}
+  let headline, subline
+  if (streak === 0) {
+    headline = 'Start your streak 🌱'
+    subline  = 'Complete a habit today to begin.'
+  } else if (streak < 7) {
+    headline = 'Building momentum 💪'
+    subline  = daysToNext ? `${daysToNext} more days to your first badge.` : 'Keep showing up!'
+  } else if (isPersonalBest) {
+    headline = 'Your longest ever! 🔥'
+    subline  = daysToNext
+      ? `You're on fire. ${daysToNext} more days to unlock the ${MILESTONE_NAMES[next]} badge.`
+      : 'You set a new personal record!'
+  } else {
+    headline = `${streak}-day streak 🔥`
+    subline  = daysToNext ? `${daysToNext} more days to the ${MILESTONE_NAMES[next]} badge.` : 'Incredible dedication!'
+  }
+
+  return (
+    <div className="flex-1 min-w-0">
+      <p className="font-heading text-[15px] text-white leading-snug">{headline}</p>
+      <p className="text-zinc-500 text-xs mt-1 leading-relaxed">{subline}</p>
+      <div className="flex gap-2 mt-3 flex-wrap">
+        {streak > 0 && (
+          <span className="px-2.5 py-1 rounded-full bg-accent/15 border border-accent/20 text-accent text-[11px]">
+            🔥 On fire
+          </span>
+        )}
+        {isPersonalBest && (
+          <span className="px-2.5 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-[11px]">
+            🏆 Personal best
+          </span>
+        )}
+      </div>
     </div>
   )
 }
 
-export default function DashboardScreen({ openHabit, openMilestone }) {
-  const {
-    habits,
-    addHabit,
-    getTodayCount,
-    getTopStreak,
-    getWeekSummary,
-  } = useHabitStore()
+// ── Week strip ──────────────────────────────────────────────────────────────
+function WeekStrip({ weekSummary }) {
+  return (
+    <div className="mt-5 pt-4 border-t border-surface2">
+      <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-3">This week</p>
+      <div className="flex justify-between">
+        {weekSummary.map(({ date, completedCount, totalHabits }, i) => {
+          const isToday  = date === TODAY_ISO
+          const isPast   = date < TODAY_ISO
+          const allDone  = totalHabits > 0 && completedCount >= totalHabits
 
-  const todayCount  = getTodayCount()
-  const topStreak   = getTopStreak()
-  const weekSummary = getWeekSummary()
-  const total       = habits.length
-  const todayPct    = total === 0 ? 0 : todayCount / total
+          return (
+            <div key={date} className="flex flex-col items-center gap-1.5">
+              <span className="text-[10px] text-zinc-600">{DAY_LABELS[i]}</span>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 text-sm font-bold ${
+                allDone
+                  ? 'bg-accent text-bg'
+                  : isToday
+                  ? 'border-2 border-accent/40 text-transparent'
+                  : isPast
+                  ? 'bg-surface2 text-transparent'
+                  : 'bg-surface2 opacity-25 text-transparent'
+              }`}>
+                {allDone ? '✓' : ''}
+                {isToday && !allDone ? <span className="w-1.5 h-1.5 rounded-full bg-accent/50 block" /> : null}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Mini heatmap (10 weeks × 7 days) ───────────────────────────────────────
+function MiniHeatmap() {
+  const { habits, completions } = useHabitStore()
+
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const cells = Array.from({ length: 70 }, (_, i) => {
+    const d   = new Date(today); d.setDate(today.getDate() - (69 - i))
+    const iso = d.toISOString().split('T')[0]
+    const count = habits.filter(h => (completions[h.id] || []).includes(iso)).length
+    const pct   = habits.length > 0 ? count / habits.length : 0
+    return { iso, pct }
+  })
+
+  const cols = Array.from({ length: 10 }, (_, w) => cells.slice(w * 7, w * 7 + 7))
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.4 }}
+      className="mt-6 pb-4"
+    >
+      <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-3">Activity</p>
+      <div className="flex gap-1">
+        {cols.map((col, w) => (
+          <div key={w} className="flex flex-col gap-1 flex-1">
+            {col.map(({ iso, pct }) => (
+              <div
+                key={iso}
+                className={`aspect-square rounded-[2px] ${iso === TODAY_ISO ? 'ring-1 ring-gold/60' : ''} ${
+                  pct === 0   ? 'bg-surface2' :
+                  pct < 0.5   ? 'bg-accent/25' :
+                  pct < 1     ? 'bg-accent/55' :
+                                'bg-accent'
+                }`}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  )
+}
+
+// ── Dashboard ───────────────────────────────────────────────────────────────
+export default function DashboardScreen({ openHabit }) {
+  const { habits, addHabit, getTodayCount, getTopStreak, getPersonalBest, getWeekSummary } = useHabitStore()
+
+  const todayCount   = getTodayCount()
+  const topStreak    = getTopStreak()
+  const personalBest = getPersonalBest()
+  const weekSummary  = getWeekSummary()
+  const total        = habits.length
 
   return (
     <div className="min-h-screen bg-bg text-white">
       <div className="max-w-md mx-auto px-5 pb-36 pt-safe">
         <Header />
 
-        {/* Hero card — streak ring + progress + week strip */}
+        {/* Hero card */}
         <motion.div
-          initial={{ opacity: 0, y: 14 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="mt-6 bg-surface rounded-[28px] p-5 border border-surface2"
+          className="mt-5 bg-surface rounded-[22px] p-5 border border-surface2"
         >
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4">
             <StreakRing streak={topStreak} />
-
-            <div className="flex-1 min-w-0">
-              <p className="text-zinc-500 text-xs uppercase tracking-widest">Top streak</p>
-              <h2 className="font-heading text-4xl text-white mt-0.5">{topStreak} <span className="text-xl text-zinc-400">days</span></h2>
-
-              {/* Today's progress */}
-              <div className="mt-3">
-                <div className="flex justify-between items-center mb-1.5">
-                  <span className="text-xs text-zinc-400">Today</span>
-                  <span className="text-xs text-teal font-medium">{todayCount}/{total}</span>
-                </div>
-                <div className="h-2 rounded-full bg-surface2 overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${todayPct * 100}%` }}
-                    transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
-                    className="h-full rounded-full bg-teal"
-                  />
-                </div>
-              </div>
-            </div>
+            <HeroCopy streak={topStreak} personalBest={personalBest} />
           </div>
-
           <WeekStrip weekSummary={weekSummary} />
         </motion.div>
 
-        <SummaryBar />
+        {/* Today's habits */}
+        <div className="flex items-center justify-between mt-7 mb-1">
+          <p className="text-[11px] text-zinc-500 uppercase tracking-widest">Today's habits</p>
+          {total > 0 && (
+            <p className="text-[11px] font-medium text-accent">{todayCount} of {total} done</p>
+          )}
+        </div>
 
         <HabitList habits={habits} openHabit={openHabit} />
+
+        {habits.length > 0 && <MiniHeatmap />}
       </div>
 
       <AddHabitSheet addHabit={addHabit} />

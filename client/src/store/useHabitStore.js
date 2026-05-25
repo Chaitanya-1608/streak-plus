@@ -114,6 +114,9 @@ const useHabitStore = create((set, get) => ({
   getTopStreak: () => {
     return Math.max(0, ...get().habits.map(h => computeStreak(get().completions[h.id] || [])))
   },
+  getPersonalBest: () => {
+    return Math.max(0, ...get().habits.map(h => computeLongest(get().completions[h.id] || [])))
+  },
   getAllTimeCompletions: () => {
     return Object.values(get().completions).reduce((sum, arr) => sum + arr.length, 0)
   },

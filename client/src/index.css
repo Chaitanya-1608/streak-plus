@@ -5,6 +5,8 @@
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
@@ -18,14 +20,18 @@
 
   h1, h2, h3 {
     font-family: 'Syne', sans-serif;
-    font-weight: 800;
+    font-weight: 700;
+    font-stretch: normal;
+    letter-spacing: -0.01em;
   }
 }
 
 @layer utilities {
   .font-heading {
     font-family: 'Syne', sans-serif;
-    font-weight: 800;
+    font-weight: 700;
+    font-stretch: normal;
+    letter-spacing: -0.01em;
   }
 
   /* Safe area insets for PWA notch/home-bar */

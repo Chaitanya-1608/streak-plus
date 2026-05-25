@@ -19,7 +19,7 @@ export default function HabitList({ habits, openHabit }) {
   }
 
   return (
-    <div className="mt-5 space-y-4">
+    <div className="mt-3">
       {habits.map(habit => (
         <HabitCard key={habit.id} habit={habit} openHabit={openHabit} />
       ))}

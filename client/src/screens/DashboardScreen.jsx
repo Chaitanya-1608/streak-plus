@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import Header from '../components/core/Header'
 import HabitList from '../components/core/HabitList'
 import AddHabitSheet from '../components/bottomsheet/AddHabitSheet'
 import useHabitStore from '../store/useHabitStore'
+import { requestAndSchedule, isNotifEnabled } from '../utils/notifications'
 
 const TODAY_ISO  = new Date().toISOString().split('T')[0]
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -177,6 +178,43 @@ function MiniHeatmap() {
   )
 }
 
+// ── Soft notification nudge card ────────────────────────────────────────────
+function NotifCard() {
+  const [visible, setVisible] = useState(
+    'Notification' in window && Notification.permission === 'default'
+  )
+
+  const enable = async () => {
+    const ok = await requestAndSchedule()
+    setVisible(false)
+  }
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, height: 0, marginTop: 0 }}
+          className="mt-4 flex items-center gap-3 px-4 py-3 rounded-[16px] bg-surface border border-surface2"
+        >
+          <span className="text-lg flex-shrink-0">🔔</span>
+          <p className="flex-1 text-zinc-500 text-xs leading-snug">
+            Get a soft nudge twice a day with your remaining habits.
+          </p>
+          <button
+            onClick={enable}
+            className="flex-shrink-0 px-3 py-1.5 rounded-[10px] bg-accent/15 text-accent text-xs font-medium"
+          >
+            Enable
+          </button>
+          <button onClick={() => setVisible(false)} className="text-zinc-700 text-sm flex-shrink-0">✕</button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 // ── Dashboard ───────────────────────────────────────────────────────────────
 export default function DashboardScreen({ openHabit }) {
   const { habits, addHabit, getTodayCount, getTopStreak, getPersonalBest, getWeekSummary } = useHabitStore()
@@ -205,6 +243,8 @@ export default function DashboardScreen({ openHabit }) {
           </div>
           <WeekStrip weekSummary={weekSummary} />
         </motion.div>
+
+        <NotifCard />
 
         {/* Today's habits */}
         <div className="flex items-center justify-between mt-7 mb-1">

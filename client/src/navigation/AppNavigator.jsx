@@ -1,26 +1,29 @@
 import { useState, useEffect } from 'react'
 
-import WelcomeScreen     from '../screens/WelcomeScreen'
-import OnboardingScreen  from '../screens/OnboardingScreen'
-import LoginScreen       from '../screens/LoginScreen'
-import DashboardScreen   from '../screens/DashboardScreen'
-import HabitDetailScreen from '../screens/HabitDetailScreen'
-import MilestoneScreen   from '../screens/MilestoneScreen'
-import InstallPrompt     from '../components/ui/InstallPrompt'
+import WelcomeScreen       from '../screens/WelcomeScreen'
+import OnboardingScreen    from '../screens/OnboardingScreen'
+import LoginScreen         from '../screens/LoginScreen'
+import DashboardScreen     from '../screens/DashboardScreen'
+import HabitDetailScreen   from '../screens/HabitDetailScreen'
+import MilestoneScreen     from '../screens/MilestoneScreen'
+import GraduationCeremony  from '../screens/GraduationCeremony'
+import InstallPrompt       from '../components/ui/InstallPrompt'
+import BuilderWizard       from '../components/builder/BuilderWizard'
 import { scheduleNudges, isNotifEnabled } from '../utils/notifications'
-import useHabitStore          from '../store/useHabitStore'
-import { pushToCloud }        from '../utils/sync'
+import useHabitStore       from '../store/useHabitStore'
+import { pushToCloud }     from '../utils/sync'
 
 function initialScreen() {
-  if (localStorage.getItem('streak-auth'))       return 'dashboard'
-  if (localStorage.getItem('streak-onboarded'))  return 'welcome'
+  if (localStorage.getItem('streak-auth')) return 'dashboard'
   return 'welcome'
 }
 
 export default function AppNavigator() {
-  const [screen,        setScreen]        = useState(initialScreen)
-  const [selectedHabit, setSelectedHabit] = useState(null)
-  const [showInstall,   setShowInstall]   = useState(false)
+  const [screen,          setScreen]          = useState(initialScreen)
+  const [selectedHabit,   setSelectedHabit]   = useState(null)
+  const [showInstall,     setShowInstall]      = useState(false)
+  const [builderData,     setBuilderData]      = useState(null)  // { name, emoji }
+  const [graduatedHabit,  setGraduatedHabit]   = useState(null)  // habit object
 
   // Capture browser install prompt before it fires
   useEffect(() => {
@@ -45,7 +48,6 @@ export default function AppNavigator() {
   }, [])
 
   const handleWelcomeContinue = () => {
-    // First-time users get the interactive onboarding; returning visitors go straight to login
     if (localStorage.getItem('streak-onboarded')) {
       setScreen('login')
     } else {
@@ -64,6 +66,18 @@ export default function AppNavigator() {
     setScreen('habit')
   }
 
+  // Called by AddHabitSheet when user picks Build mode
+  const openBuilder = ({ name, emoji }) => {
+    setBuilderData({ name, emoji })
+    setScreen('builder')
+  }
+
+  // Called by DashboardScreen when a habit graduates
+  const openGraduation = (habit) => {
+    setGraduatedHabit(habit)
+    setScreen('graduation')
+  }
+
   return (
     <>
       {screen === 'welcome' && (
@@ -79,7 +93,12 @@ export default function AppNavigator() {
       )}
 
       {screen === 'dashboard' && (
-        <DashboardScreen openHabit={openHabit} openMilestone={() => setScreen('milestone')} />
+        <DashboardScreen
+          openHabit={openHabit}
+          openBuilder={openBuilder}
+          openGraduation={openGraduation}
+          openMilestone={() => setScreen('milestone')}
+        />
       )}
 
       {screen === 'habit' && (
@@ -88,6 +107,22 @@ export default function AppNavigator() {
 
       {screen === 'milestone' && (
         <MilestoneScreen goBack={() => setScreen('dashboard')} />
+      )}
+
+      {screen === 'builder' && builderData && (
+        <BuilderWizard
+          habitName={builderData.name}
+          habitEmoji={builderData.emoji}
+          onDone={() => setScreen('dashboard')}
+          onCancel={() => setScreen('dashboard')}
+        />
+      )}
+
+      {screen === 'graduation' && graduatedHabit && (
+        <GraduationCeremony
+          habit={graduatedHabit}
+          onDone={() => setScreen('dashboard')}
+        />
       )}
 
       <InstallPrompt show={showInstall} onDismiss={() => setShowInstall(false)} />

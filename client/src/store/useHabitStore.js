@@ -85,6 +85,26 @@ const weekDots = (completions, habitId, createdAt) => {
   })
 }
 
+// Normalize a habit row coming from cloud (snake_case → camelCase)
+function normalizeCloudHabit(h) {
+  return {
+    id:                  h.id,
+    name:                h.name,
+    emoji:               h.emoji,
+    createdAt:           h.created_at,
+    frequency:           h.frequency || 'daily',
+    days:                h.days      || [0, 1, 2, 3, 4, 5, 6],
+    mode:                h.mode               || 'maintaining',
+    buildStage:          h.build_stage         || 0,
+    identityStatement:   h.identity_statement  || '',
+    cue:                 h.cue                 || '',
+    habitStack:          h.habit_stack         || '',
+    minimumVersion:      h.minimum_version     || '',
+    reward:              h.reward              || '',
+    graduatedAt:         h.graduated_at        || null,
+  }
+}
+
 const initialEmail = getInitialEmail()
 const saved        = load(initialEmail)
 
@@ -93,7 +113,7 @@ const useHabitStore = create((set, get) => ({
   completions: saved.completions,
   userEmail:   initialEmail,
 
-  // Called after login/sign-up — loads local data instantly, then merges cloud in background
+  // Called after login/sign-up — loads local instantly, merges cloud in background
   loadForUser: async (email) => {
     const data = load(email)
     set({ habits: data.habits, completions: data.completions, userEmail: email })
@@ -101,12 +121,19 @@ const useHabitStore = create((set, get) => ({
     const cloud = await pullFromCloud()
     if (!cloud?.ok) return
 
-    // Merge habits: add any from cloud not already local
-    const localIds = new Set(data.habits.map(h => h.id))
+    // Merge habits: add any from cloud not already local; cloud mode wins (graduation on other device)
+    const localMap = new Map(data.habits.map(h => [h.id, h]))
     const merged   = [...data.habits]
-    for (const h of cloud.habits) {
-      if (!localIds.has(h.id)) {
-        merged.push({ id: h.id, name: h.name, emoji: h.emoji, createdAt: h.created_at })
+    for (const ch of cloud.habits) {
+      if (localMap.has(ch.id)) {
+        // Let cloud mode field win (e.g. graduated on another device)
+        const local = localMap.get(ch.id)
+        if (ch.mode === 'maintaining' && local.mode === 'building') {
+          const idx = merged.findIndex(h => h.id === ch.id)
+          merged[idx] = { ...local, mode: 'maintaining', graduatedAt: ch.graduated_at || local.graduatedAt }
+        }
+      } else {
+        merged.push(normalizeCloudHabit(ch))
       }
     }
 
@@ -123,16 +150,60 @@ const useHabitStore = create((set, get) => ({
     set({ habits: merged, completions: mergedComp })
   },
 
+  // Quick-add (Maintain mode)
   addHabit: (habit) => {
     const exists = get().habits.some(
       h => h.name.toLowerCase() === habit.name.toLowerCase()
     )
     if (exists) return
-    const newHabit = { id: Date.now(), createdAt: TODAY(), ...habit }
-    const habits   = [...get().habits, newHabit]
+    const newHabit = {
+      id: Date.now(), createdAt: TODAY(),
+      mode: 'maintaining', buildStage: 0,
+      identityStatement: '', cue: '', habitStack: '', minimumVersion: '', reward: '', graduatedAt: null,
+      ...habit,
+    }
+    const habits = [...get().habits, newHabit]
     persist(get().userEmail, habits, get().completions)
     set({ habits })
     pushToCloud(habits, get().completions)
+  },
+
+  // Guided Build mode — 5-step wizard result
+  addBuildHabit: ({ name, emoji, identityStatement, cue, habitStack, minimumVersion, reward }) => {
+    const exists = get().habits.some(h => h.name.toLowerCase() === name.toLowerCase())
+    if (exists) return
+    const habit = {
+      id: Date.now(), createdAt: TODAY(),
+      name, emoji: emoji || '🔥',
+      frequency: 'daily', days: [0, 1, 2, 3, 4, 5, 6],
+      mode: 'building', buildStage: 5,
+      identityStatement, cue, habitStack, minimumVersion, reward,
+      graduatedAt: null,
+    }
+    const habits = [...get().habits, habit]
+    persist(get().userEmail, habits, get().completions)
+    set({ habits })
+    pushToCloud(habits, get().completions)
+  },
+
+  // Flip a building habit to maintaining after 7-day trial
+  graduateHabit: (id) => {
+    const habits = get().habits.map(h =>
+      h.id === id ? { ...h, mode: 'maintaining', graduatedAt: TODAY() } : h
+    )
+    persist(get().userEmail, habits, get().completions)
+    set({ habits })
+    pushToCloud(habits, get().completions)
+  },
+
+  // Returns habits that have just hit 7-day streak and need graduation
+  checkGraduations: () => {
+    const { habits, completions } = get()
+    return habits.filter(h =>
+      h.mode === 'building' &&
+      !h.graduatedAt &&
+      computeStreak(completions[h.id] || []) >= 7
+    )
   },
 
   completeHabit: (id) => {

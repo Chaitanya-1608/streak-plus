@@ -11,33 +11,41 @@ const FREQUENCIES = [
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
-export default function AddHabitSheet({ addHabit }) {
+export default function AddHabitSheet({ addHabit, onOpenBuilder }) {
   const [open,      setOpen]      = useState(false)
+  const [tab,       setTab]       = useState('quick') // 'quick' | 'build'
   const [name,      setName]      = useState('')
   const [emoji,     setEmoji]     = useState('🔥')
   const [frequency, setFrequency] = useState('daily')
-  const [days,      setDays]      = useState([0, 1, 2, 3, 4]) // Mon–Fri selected by default
+  const [days,      setDays]      = useState([0, 1, 2, 3, 4])
 
   const canSubmit = name.trim().length > 0
 
-  const toggleDay = (i) => {
+  const toggleDay = (i) =>
     setDays(prev => prev.includes(i) ? prev.filter(d => d !== i) : [...prev, i])
+
+  const reset = () => {
+    setName(''); setEmoji('🔥'); setFrequency('daily'); setDays([0, 1, 2, 3, 4]); setTab('quick')
   }
 
-  const handleAdd = () => {
+  const handleQuickAdd = () => {
     if (!canSubmit) return
     addHabit({ name: name.trim(), emoji, frequency, days })
-    // Reset
-    setName('')
-    setEmoji('🔥')
-    setFrequency('daily')
-    setDays([0, 1, 2, 3, 4])
+    reset()
     setOpen(false)
+  }
+
+  const handleStartBuild = () => {
+    if (!canSubmit) return
+    const data = { name: name.trim(), emoji }
+    reset()
+    setOpen(false)
+    onOpenBuilder(data)
   }
 
   return (
     <>
-      {/* FAB — anchored inside the 390px shell */}
+      {/* FAB */}
       <motion.button
         whileTap={{ scale: 0.92 }}
         onClick={() => setOpen(true)}
@@ -46,7 +54,7 @@ export default function AddHabitSheet({ addHabit }) {
         +
       </motion.button>
 
-      {/* Backdrop — covers only the shell */}
+      {/* Backdrop */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -59,7 +67,7 @@ export default function AddHabitSheet({ addHabit }) {
         )}
       </AnimatePresence>
 
-      {/* Sheet — constrained to shell width */}
+      {/* Sheet */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -72,7 +80,44 @@ export default function AddHabitSheet({ addHabit }) {
             {/* Drag handle */}
             <div className="w-10 h-1 rounded-full bg-surface2 mx-auto mb-5" />
 
-            <h2 className="font-heading text-2xl text-white mb-5">New Habit</h2>
+            {/* Mode tabs */}
+            <div className="flex gap-2 mb-5 p-1 bg-surface2 rounded-[14px]">
+              {[
+                { id: 'quick', label: '⚡ Quick add'   },
+                { id: 'build', label: '🌱 Build mode'  },
+              ].map(({ id, label }) => (
+                <button
+                  key={id}
+                  onClick={() => setTab(id)}
+                  className={`flex-1 py-2 rounded-[10px] text-sm font-medium transition-all duration-200 ${
+                    tab === id
+                      ? 'bg-accent text-bg shadow-sm'
+                      : 'text-zinc-500'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Build mode explainer */}
+            <AnimatePresence>
+              {tab === 'build' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mb-4 px-3 py-3 rounded-2xl bg-teal/8 border border-teal/20">
+                    <p className="text-teal text-xs leading-relaxed">
+                      5-step Atomic Habits wizard → identity, cue, habit stack, 2-minute rule, reward.
+                      Your habit enters a 7-day trial then graduates automatically.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Name input */}
             <input
@@ -80,6 +125,7 @@ export default function AddHabitSheet({ addHabit }) {
               value={name}
               onChange={e => setName(e.target.value)}
               autoFocus
+              style={{ colorScheme: 'dark', WebkitTextFillColor: '#fff' }}
               className="w-full bg-surface2 border border-surface2 focus:border-accent/50 rounded-2xl px-4 py-3.5 text-white placeholder-zinc-600 outline-none transition-colors text-base"
             />
 
@@ -102,48 +148,56 @@ export default function AddHabitSheet({ addHabit }) {
               ))}
             </div>
 
-            {/* Frequency selector */}
-            <p className="text-xs text-zinc-500 uppercase tracking-widest mt-5 mb-3">Frequency</p>
-            <div className="flex gap-2">
-              {FREQUENCIES.map(({ id, label }) => (
-                <button
-                  key={id}
-                  onClick={() => setFrequency(id)}
-                  className={`flex-1 py-2.5 rounded-[14px] text-sm font-medium transition-all ${
-                    frequency === id
-                      ? 'bg-accent text-white'
-                      : 'bg-surface2 text-zinc-400'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {/* Custom day selector */}
+            {/* Frequency (Quick mode only) */}
             <AnimatePresence>
-              {frequency === 'custom' && (
+              {tab === 'quick' && (
                 <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden"
                 >
-                  <div className="flex gap-2 mt-3">
-                    {WEEKDAYS.map((d, i) => (
+                  <p className="text-xs text-zinc-500 uppercase tracking-widest mt-5 mb-3">Frequency</p>
+                  <div className="flex gap-2">
+                    {FREQUENCIES.map(({ id, label }) => (
                       <button
-                        key={i}
-                        onClick={() => toggleDay(i)}
-                        className={`flex-1 py-2 rounded-xl text-xs font-medium transition-all ${
-                          days.includes(i)
-                            ? 'bg-teal/20 text-teal border border-teal/50'
-                            : 'bg-surface2 text-zinc-600 border border-transparent'
+                        key={id}
+                        onClick={() => setFrequency(id)}
+                        className={`flex-1 py-2.5 rounded-[14px] text-sm font-medium transition-all ${
+                          frequency === id ? 'bg-accent text-white' : 'bg-surface2 text-zinc-400'
                         }`}
                       >
-                        {d}
+                        {label}
                       </button>
                     ))}
                   </div>
+
+                  <AnimatePresence>
+                    {frequency === 'custom' && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="flex gap-2 mt-3">
+                          {WEEKDAYS.map((d, i) => (
+                            <button
+                              key={i}
+                              onClick={() => toggleDay(i)}
+                              className={`flex-1 py-2 rounded-xl text-xs font-medium transition-all ${
+                                days.includes(i)
+                                  ? 'bg-teal/20 text-teal border border-teal/50'
+                                  : 'bg-surface2 text-zinc-600 border border-transparent'
+                              }`}
+                            >
+                              {d}
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -151,7 +205,7 @@ export default function AddHabitSheet({ addHabit }) {
             {/* CTA */}
             <motion.button
               whileTap={{ scale: canSubmit ? 0.96 : 1 }}
-              onClick={handleAdd}
+              onClick={tab === 'quick' ? handleQuickAdd : handleStartBuild}
               disabled={!canSubmit}
               className={`w-full mt-6 mb-3 py-4 rounded-[20px] font-heading text-lg transition-all duration-200 ${
                 canSubmit
@@ -159,7 +213,7 @@ export default function AddHabitSheet({ addHabit }) {
                   : 'bg-surface2 text-zinc-600 opacity-40 cursor-not-allowed'
               }`}
             >
-              Create Habit
+              {tab === 'quick' ? 'Create Habit' : 'Start 5-step wizard →'}
             </motion.button>
           </motion.div>
         )}

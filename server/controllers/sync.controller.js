@@ -5,20 +5,26 @@ exports.push = async (req, res) => {
   const userId = req.user.id
   const { habits = [], completions = {} } = req.body
 
-  // Upsert habits
   if (habits.length > 0) {
     const rows = habits.map(h => ({
-      id:         Number(h.id),
-      user_id:    userId,
-      name:       h.name,
-      emoji:      h.emoji || '🔥',
-      created_at: h.createdAt || h.created_at || '',
+      id:                 Number(h.id),
+      user_id:            userId,
+      name:               h.name,
+      emoji:              h.emoji || '🔥',
+      created_at:         h.createdAt || h.created_at || '',
+      mode:               h.mode               || 'maintaining',
+      build_stage:        h.buildStage          || 0,
+      identity_statement: h.identityStatement   || null,
+      cue:                h.cue                 || null,
+      habit_stack:        h.habitStack          || null,
+      minimum_version:    h.minimumVersion      || null,
+      reward:             h.reward              || null,
+      graduated_at:       h.graduatedAt         || null,
     }))
     const { error } = await supabase.from('habits').upsert(rows, { onConflict: 'user_id,id' })
     if (error) console.error('[sync push] habits:', error.message)
   }
 
-  // Upsert completions
   const compRows = []
   for (const [habitId, dates] of Object.entries(completions)) {
     for (const date of dates) {
@@ -48,7 +54,6 @@ exports.pull = async (req, res) => {
     return res.status(500).json({ ok: false, message: (he || ce).message })
   }
 
-  // Group completions into { habitId: [dates] }
   const completions = {}
   for (const c of comps) {
     const key = String(c.habit_id)

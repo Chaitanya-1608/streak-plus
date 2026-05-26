@@ -6,9 +6,9 @@ import AddHabitSheet from '../components/bottomsheet/AddHabitSheet'
 import useHabitStore, { localISO } from '../store/useHabitStore'
 import { requestAndSchedule, isNotifEnabled } from '../utils/notifications'
 
-const TODAY_ISO  = localISO()   // local calendar date — avoids UTC day-offset bug
+const TODAY_ISO  = localISO()
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-const CIRC       = 2 * Math.PI * 44   // r=44 in 100×100 viewBox
+const CIRC       = 2 * Math.PI * 44
 
 const MILESTONE_NAMES = {
   7: 'Sprout', 14: 'Builder', 21: 'Habit',
@@ -107,21 +107,18 @@ function WeekStrip({ weekSummary }) {
       <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-3">This week</p>
       <div className="flex justify-between">
         {weekSummary.map(({ date, completedCount, totalHabits }, i) => {
-          const isToday  = date === TODAY_ISO
-          const isPast   = date < TODAY_ISO
-          const allDone  = totalHabits > 0 && completedCount >= totalHabits
+          const isToday = date === TODAY_ISO
+          const isPast  = date < TODAY_ISO
+          const allDone = totalHabits > 0 && completedCount >= totalHabits
 
           return (
             <div key={date} className="flex flex-col items-center gap-1.5">
               <span className="text-[10px] text-zinc-600">{DAY_LABELS[i]}</span>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 text-sm font-bold ${
-                allDone
-                  ? 'bg-accent text-bg'
-                  : isToday
-                  ? 'border-2 border-accent/40 text-transparent'
-                  : isPast
-                  ? 'bg-surface2 text-transparent'
-                  : 'bg-surface2 opacity-25 text-transparent'
+                allDone  ? 'bg-accent text-bg'
+                : isToday ? 'border-2 border-accent/40 text-transparent'
+                : isPast  ? 'bg-surface2 text-transparent'
+                :           'bg-surface2 opacity-25 text-transparent'
               }`}>
                 {allDone ? '✓' : ''}
                 {isToday && !allDone ? <span className="w-1.5 h-1.5 rounded-full bg-accent/50 block" /> : null}
@@ -134,14 +131,14 @@ function WeekStrip({ weekSummary }) {
   )
 }
 
-// ── Mini heatmap (10 weeks × 7 days) — circles ─────────────────────────────
+// ── Mini heatmap ─────────────────────────────────────────────────────────────
 function MiniHeatmap() {
   const { habits, completions } = useHabitStore()
 
   const today = new Date()
   const cells = Array.from({ length: 70 }, (_, i) => {
-    const d   = new Date(today); d.setDate(today.getDate() - (69 - i))
-    const iso = localISO(d)   // local date — matches how completions are stored
+    const d     = new Date(today); d.setDate(today.getDate() - (69 - i))
+    const iso   = localISO(d)
     const count = habits.filter(h => (completions[h.id] || []).includes(iso)).length
     const pct   = habits.length > 0 ? count / habits.length : 0
     return { iso, pct }
@@ -167,7 +164,7 @@ function MiniHeatmap() {
                   pct === 0 ? 'bg-surface2' :
                   pct < 0.5 ? 'bg-accent/30' :
                   pct < 1   ? 'bg-accent/60' :
-                              'bg-accent'
+                               'bg-accent'
                 }`}
               />
             ))}
@@ -178,14 +175,14 @@ function MiniHeatmap() {
   )
 }
 
-// ── Soft notification nudge card ────────────────────────────────────────────
+// ── Notification nudge card ──────────────────────────────────────────────────
 function NotifCard() {
   const [visible, setVisible] = useState(
     'Notification' in window && Notification.permission === 'default'
   )
 
   const enable = async () => {
-    const ok = await requestAndSchedule()
+    await requestAndSchedule()
     setVisible(false)
   }
 
@@ -202,10 +199,7 @@ function NotifCard() {
           <p className="flex-1 text-zinc-500 text-xs leading-snug">
             Get a soft nudge twice a day with your remaining habits.
           </p>
-          <button
-            onClick={enable}
-            className="flex-shrink-0 px-3 py-1.5 rounded-[10px] bg-accent/15 text-accent text-xs font-medium"
-          >
+          <button onClick={enable} className="flex-shrink-0 px-3 py-1.5 rounded-[10px] bg-accent/15 text-accent text-xs font-medium">
             Enable
           </button>
           <button onClick={() => setVisible(false)} className="text-zinc-700 text-sm flex-shrink-0">✕</button>
@@ -215,15 +209,42 @@ function NotifCard() {
   )
 }
 
-// ── Dashboard ───────────────────────────────────────────────────────────────
-export default function DashboardScreen({ openHabit }) {
-  const { habits, addHabit, getTodayCount, getTopStreak, getPersonalBest, getWeekSummary } = useHabitStore()
+// ── Section header ───────────────────────────────────────────────────────────
+function SectionHeader({ label, count, total }) {
+  return (
+    <div className="flex items-center justify-between mt-7 mb-1">
+      <p className="text-[11px] text-zinc-500 uppercase tracking-widest">{label}</p>
+      {total > 0 && (
+        <p className="text-[11px] font-medium text-accent">{count} of {total} done</p>
+      )}
+    </div>
+  )
+}
 
-  const todayCount   = getTodayCount()
+// ── Dashboard ────────────────────────────────────────────────────────────────
+export default function DashboardScreen({ openHabit, openBuilder, openGraduation }) {
+  const {
+    habits, addHabit,
+    getTodayCount, getTopStreak, getPersonalBest, getWeekSummary,
+    checkGraduations, graduateHabit,
+  } = useHabitStore()
+
   const topStreak    = getTopStreak()
   const personalBest = getPersonalBest()
   const weekSummary  = getWeekSummary()
-  const total        = habits.length
+  const todayCount   = getTodayCount()
+
+  const buildHabits    = habits.filter(h => h.mode === 'building')
+  const maintainHabits = habits.filter(h => h.mode !== 'building')
+
+  // Check for habits that just completed 7-day trial
+  useEffect(() => {
+    const toGraduate = checkGraduations()
+    if (toGraduate.length > 0) {
+      toGraduate.forEach(h => graduateHabit(h.id))
+      openGraduation(toGraduate[0])
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-screen bg-bg text-white">
@@ -246,20 +267,43 @@ export default function DashboardScreen({ openHabit }) {
 
         <NotifCard />
 
-        {/* Today's habits */}
-        <div className="flex items-center justify-between mt-7 mb-1">
-          <p className="text-[11px] text-zinc-500 uppercase tracking-widest">Today's habits</p>
-          {total > 0 && (
-            <p className="text-[11px] font-medium text-accent">{todayCount} of {total} done</p>
-          )}
-        </div>
+        {/* Building habits section */}
+        {buildHabits.length > 0 && (
+          <>
+            <div className="flex items-center justify-between mt-7 mb-1">
+              <p className="text-[11px] text-zinc-500 uppercase tracking-widest">Building 🌱</p>
+              <p className="text-[11px] text-teal">7-day trial</p>
+            </div>
+            <HabitList habits={buildHabits} openHabit={openHabit} />
+          </>
+        )}
 
-        <HabitList habits={habits} openHabit={openHabit} />
+        {/* Maintaining habits section */}
+        {maintainHabits.length > 0 && (
+          <>
+            <SectionHeader
+              label={buildHabits.length > 0 ? 'Maintaining 🔥' : "Today's habits"}
+              count={todayCount}
+              total={habits.length}
+            />
+            <HabitList habits={maintainHabits} openHabit={openHabit} />
+          </>
+        )}
+
+        {/* Empty state — no habits at all */}
+        {habits.length === 0 && (
+          <>
+            <div className="flex items-center justify-between mt-7 mb-1">
+              <p className="text-[11px] text-zinc-500 uppercase tracking-widest">Today's habits</p>
+            </div>
+            <HabitList habits={[]} openHabit={openHabit} />
+          </>
+        )}
 
         {habits.length > 0 && <MiniHeatmap />}
       </div>
 
-      <AddHabitSheet addHabit={addHabit} />
+      <AddHabitSheet addHabit={addHabit} onOpenBuilder={openBuilder} />
     </div>
   )
 }

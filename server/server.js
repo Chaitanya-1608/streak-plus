@@ -16,6 +16,9 @@ const analyticsRoutes =
 const syncRoutes =
   require('./routes/sync.routes')
 
+const feedbackRoutes =
+  require('./routes/feedback.routes')
+
 const app = express()
 
 // CORS
@@ -61,6 +64,11 @@ app.use(
 app.use(
   '/api/sync',
   syncRoutes
+)
+
+app.use(
+  '/api/feedback',
+  feedbackRoutes
 )
 
 // HEALTH CHECK

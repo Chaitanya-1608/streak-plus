@@ -84,16 +84,28 @@ function FeedbackModal({ onClose }) {
 
   const handleSubmit = () => {
     if (!canSubmit) return
+    const auth = (() => { try { return JSON.parse(localStorage.getItem('streak-auth') || '{}') } catch { return {} } })()
     const entry = {
       category,
       stars,
       message: message.trim(),
       timestamp: new Date().toISOString(),
-      user: (() => { try { return JSON.parse(localStorage.getItem('streak-auth') || '{}').email } catch { return 'unknown' } })(),
+      user: auth.email || 'unknown',
     }
     const history = JSON.parse(localStorage.getItem('streak-feedback-history') || '[]')
     history.push(entry)
     localStorage.setItem('streak-feedback-history', JSON.stringify(history))
+
+    // Fire-and-forget to admin email
+    fetch('https://streak-plus-api.onrender.com/api/feedback', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(auth.token ? { Authorization: `Bearer ${auth.token}` } : {}),
+      },
+      body: JSON.stringify({ category, stars, message: message.trim(), userEmail: auth.email }),
+    }).catch(() => {})
+
     setDone(true)
   }
 

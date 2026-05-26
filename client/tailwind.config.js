@@ -17,8 +17,9 @@ export default {
         cream:    '#FFEAB3',   // pale cream  — glow tints  (#FFEAB3)
       },
       fontFamily: {
-        syne:   ['Syne', 'sans-serif'],
-        dmsans: ['DM Sans', 'sans-serif'],
+        syne:    ['Syne', 'sans-serif'],
+        dmsans:  ['DM Sans', 'sans-serif'],
+        poppins: ['Poppins', 'sans-serif'],
       },
       keyframes: {
         toastIn: {

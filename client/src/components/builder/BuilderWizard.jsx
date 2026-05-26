@@ -160,8 +160,8 @@ export default function BuilderWizard({ habitName, habitEmoji, onDone, onCancel 
           >
             {/* Heading */}
             <h1
-              className="font-heading text-white leading-tight mb-2"
-              style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.02em' }}
+              className="text-white leading-tight mb-2"
+              style={{ fontFamily: 'Poppins, sans-serif', fontSize: 34, fontWeight: 700, letterSpacing: '-0.01em' }}
             >
               {s.question}
             </h1>

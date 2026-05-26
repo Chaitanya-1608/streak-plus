@@ -102,4 +102,45 @@ async function sendWelcomeEmail(email, firstName) {
   return { ok: true, id: data.id }
 }
 
-module.exports = { sendWelcomeEmail }
+const ADMIN = 'chaitanyapachori16@gmail.com'
+
+async function sendAdminNewUser({ name, email, userNumber }) {
+  if (!process.env.RESEND_API_KEY) return
+  const html = `
+    <div style="font-family:Arial,sans-serif;padding:24px;color:#1a1a1a;">
+      <h2 style="color:#DBAD28;margin:0 0 16px;">🔥 New Streak+ signup</h2>
+      <p style="margin:4px 0;"><strong>Name:</strong> ${name}</p>
+      <p style="margin:4px 0;"><strong>Email:</strong> ${email}</p>
+      <p style="margin:4px 0;"><strong>User #:</strong> ${userNumber}</p>
+      <p style="margin:16px 0 0;font-size:11px;color:#aaa;">Sent automatically by Streak+</p>
+    </div>`
+  await resend.emails.send({
+    from: FROM,
+    to:   [ADMIN],
+    subject: `New signup: ${name} (#${userNumber})`,
+    html,
+  }).catch(e => console.error('[admin new-user email]', e.message))
+}
+
+async function sendAdminFeedback({ category, stars, message, userEmail, timestamp }) {
+  if (!process.env.RESEND_API_KEY) return
+  const filled  = '★'.repeat(stars)
+  const empty   = '☆'.repeat(5 - stars)
+  const html = `
+    <div style="font-family:Arial,sans-serif;padding:24px;color:#1a1a1a;">
+      <h2 style="color:#DBAD28;margin:0 0 16px;">💬 New Streak+ feedback</h2>
+      <p style="margin:4px 0;"><strong>Category:</strong> ${category}</p>
+      <p style="margin:4px 0;"><strong>Rating:</strong> <span style="color:#DBAD28;">${filled}</span>${empty} (${stars}/5)</p>
+      <p style="margin:12px 0 4px;"><strong>Message:</strong></p>
+      <p style="background:#f4f1eb;border-radius:8px;padding:12px;margin:0;">${message}</p>
+      <p style="margin:12px 0 0;font-size:12px;color:#888;">From: ${userEmail} · ${new Date(timestamp).toLocaleString()}</p>
+    </div>`
+  await resend.emails.send({
+    from: FROM,
+    to:   [ADMIN],
+    subject: `Feedback: ${category} — ${stars}★`,
+    html,
+  }).catch(e => console.error('[admin feedback email]', e.message))
+}
+
+module.exports = { sendWelcomeEmail, sendAdminNewUser, sendAdminFeedback }

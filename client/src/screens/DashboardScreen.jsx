@@ -413,6 +413,9 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
     <div className="min-h-screen bg-bg text-white">
       <div className="max-w-md mx-auto px-5 pb-36 pt-safe">
         <Header />
+        <p className="text-zinc-600 text-xs mt-1">
+          {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+        </p>
 
         {/* Hero card */}
         <motion.div
@@ -466,6 +469,10 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
         )}
 
         {habits.length > 0 && <MiniHeatmap />}
+
+        <p className="text-center text-zinc-800 text-[10px] mt-4 mb-2">
+          Made with ♥ by Chaitanya Pachori
+        </p>
       </div>
 
       <AddHabitSheet addHabit={addHabit} onOpenBuilder={openBuilder} />

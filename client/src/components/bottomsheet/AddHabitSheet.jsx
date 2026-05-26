@@ -111,7 +111,7 @@ export default function AddHabitSheet({ addHabit, onOpenBuilder }) {
                 >
                   <div className="mb-4 px-3 py-3 rounded-2xl bg-teal/8 border border-teal/20">
                     <p className="text-teal text-xs leading-relaxed">
-                      5-step Atomic Habits wizard → identity, cue, habit stack, 2-minute rule, reward.
+                      5-step Blueprint wizard → identity, cue, habit stack, minimum version, reward.
                       Your habit enters a 7-day trial then graduates automatically.
                     </p>
                   </div>

@@ -13,7 +13,7 @@ function IdentityStep({ habitName, value, onChange }) {
       </h2>
       <p className="text-zinc-500 text-sm mb-6 leading-relaxed">
         Every habit you build is a vote for the person you want to be.
-        Atomic Habits calls this an identity-based habit.
+        The most lasting change starts with who you believe you are.
       </p>
       <p className="text-[11px] text-zinc-500 uppercase tracking-widest mb-2">I am someone who…</p>
       <input

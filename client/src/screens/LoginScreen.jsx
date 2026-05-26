@@ -171,6 +171,7 @@ function SignUp({ onSuccess, onSwitch }) {
       })
       const data = await res.json()
       if (data.token) token = data.token
+      if (data.userNumber) localStorage.setItem('streak-user-number', String(data.userNumber))
     } catch {
       // backend unreachable — sync will happen next time online
     }

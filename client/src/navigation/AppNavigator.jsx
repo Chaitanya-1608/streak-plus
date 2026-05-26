@@ -48,7 +48,8 @@ export default function AppNavigator() {
   }, [])
 
   const handleWelcomeContinue = () => {
-    if (localStorage.getItem('streak-onboarded')) {
+    const hasAccounts = JSON.parse(localStorage.getItem('streak-users') || '[]').length > 0
+    if (hasAccounts || localStorage.getItem('streak-onboarded')) {
       setScreen('login')
     } else {
       setScreen('onboarding')

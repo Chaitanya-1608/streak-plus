@@ -30,7 +30,10 @@ exports.register = async (req, res) => {
       })
     }
 
-    res.json({ success: true, token: makeToken(data), userId: String(data.id) })
+    const { count } = await supabase.from('users').select('*', { count: 'exact', head: true })
+    const userNumber = (count || 1) + 99
+
+    res.json({ success: true, token: makeToken(data), userId: String(data.id), userNumber })
   } catch (err) {
     res.status(500).json({ success: false, message: err.message })
   }

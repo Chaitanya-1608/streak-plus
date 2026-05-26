@@ -175,6 +175,45 @@ function MiniHeatmap() {
   )
 }
 
+// ── Nth user welcome card ────────────────────────────────────────────────────
+function UserNumberCard() {
+  const raw = localStorage.getItem('streak-user-number')
+  const [visible, setVisible] = useState(!!raw)
+
+  if (!visible || !raw) return null
+  const n = parseInt(raw, 10)
+
+  const ordinal = (num) => {
+    const s = ['th', 'st', 'nd', 'rd']
+    const v = num % 100
+    return num + (s[(v - 20) % 10] || s[v] || s[0])
+  }
+
+  const dismiss = () => {
+    localStorage.removeItem('streak-user-number')
+    setVisible(false)
+  }
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, height: 0, marginTop: 0 }}
+          className="mt-4 flex items-center gap-3 px-4 py-3 rounded-[16px] bg-surface border border-gold/20"
+        >
+          <span className="text-lg flex-shrink-0">🎉</span>
+          <p className="flex-1 text-zinc-400 text-xs leading-snug">
+            You are our <span className="text-gold font-semibold">{ordinal(n)} user</span>. Welcome to the club.
+          </p>
+          <button onClick={dismiss} className="text-zinc-700 text-sm flex-shrink-0">✕</button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 // ── Notification nudge card ──────────────────────────────────────────────────
 function NotifCard() {
   const [visible, setVisible] = useState(
@@ -265,6 +304,7 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
           <WeekStrip weekSummary={weekSummary} />
         </motion.div>
 
+        <UserNumberCard />
         <NotifCard />
 
         {/* Building habits section */}

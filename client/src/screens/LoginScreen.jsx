@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
+const API_BASE = 'https://streak-plus-api.onrender.com/api'
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function getUsers() {
   try { return JSON.parse(localStorage.getItem('streak-users') || '[]') }
@@ -68,17 +70,18 @@ export default function LoginScreen({ onLogin }) {
   const [password,  setPassword]  = useState('')
   const [showPass,  setShowPass]  = useState(false)
   const [emailErr,  setEmailErr]  = useState('')
+  const [loading,   setLoading]   = useState(false)
 
   const emailValid = isValidEmail(email)
   const passValid  = password.length >= 6
-  const canSubmit  = firstName.trim() && lastName.trim() && emailValid && passValid && !emailErr
+  const canSubmit  = firstName.trim() && lastName.trim() && emailValid && passValid && !emailErr && !loading
 
   const handleEmailChange = (e) => {
     setEmail(e.target.value)
     setEmailErr('')
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canSubmit) return
 
     if (isEmailTaken(email)) {
@@ -86,9 +89,29 @@ export default function LoginScreen({ onLogin }) {
       return
     }
 
+    setLoading(true)
+    try {
+      const res  = await fetch(`${API_BASE}/auth/welcome`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: email.trim(), firstName: firstName.trim() }),
+      })
+      const data = await res.json()
+
+      if (!res.ok && data.field === 'email') {
+        setEmailErr(data.message)
+        setLoading(false)
+        return
+      }
+      // Non-fatal errors (server down, email failed) — still let them in
+    } catch {
+      // Backend unreachable — skip validation, proceed
+    }
+
     const user = { firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim() }
     saveUser(user)
     localStorage.setItem('streak-auth', JSON.stringify(user))
+    setLoading(false)
     onLogin()
   }
 
@@ -186,13 +209,22 @@ export default function LoginScreen({ onLogin }) {
           whileTap={{ scale: canSubmit ? 0.96 : 1 }}
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className={`w-full py-4 rounded-[18px] font-heading text-base transition-all duration-200 ${
+          className={`w-full py-4 rounded-[18px] font-heading text-base transition-all duration-200 flex items-center justify-center gap-2 ${
             canSubmit
               ? 'bg-accent text-bg'
               : 'bg-surface2 text-zinc-700 cursor-not-allowed'
           }`}
         >
-          Enter Streak+
+          {loading ? (
+            <>
+              <motion.span
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
+                className="inline-block w-4 h-4 border-2 border-bg/30 border-t-bg rounded-full"
+              />
+              Sending welcome email…
+            </>
+          ) : 'Enter Streak+'}
         </motion.button>
 
         <p className="text-center text-zinc-700 text-xs mt-4">

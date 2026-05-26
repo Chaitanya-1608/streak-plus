@@ -1,6 +1,6 @@
-const express = require('express')
-
-const cors = require('cors')
+const express   = require('express')
+const cors      = require('cors')
+const rateLimit = require('express-rate-limit')
 
 require('dotenv').config()
 
@@ -44,10 +44,29 @@ app.use(cors({
 
 app.use(express.json())
 
+// RATE LIMITING
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many attempts. Try again in 15 minutes.' },
+})
+
+const feedbackLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many feedback submissions.' },
+})
+
 // ROUTES
 
 app.use(
   '/api/auth',
+  authLimiter,
   authRoutes
 )
 
@@ -68,6 +87,7 @@ app.use(
 
 app.use(
   '/api/feedback',
+  feedbackLimiter,
   feedbackRoutes
 )
 

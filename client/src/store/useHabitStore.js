@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { pushToCloud, pullFromCloud } from '../utils/sync'
 
 // Always use LOCAL calendar date — toISOString() returns UTC which causes day-offset bugs
 // when the user's timezone is ahead of UTC (e.g. IST = UTC+5:30).
@@ -92,10 +93,34 @@ const useHabitStore = create((set, get) => ({
   completions: saved.completions,
   userEmail:   initialEmail,
 
-  // Called after login/sign-up to swap in the correct user's data
-  loadForUser: (email) => {
+  // Called after login/sign-up — loads local data instantly, then merges cloud in background
+  loadForUser: async (email) => {
     const data = load(email)
     set({ habits: data.habits, completions: data.completions, userEmail: email })
+
+    const cloud = await pullFromCloud()
+    if (!cloud?.ok) return
+
+    // Merge habits: add any from cloud not already local
+    const localIds = new Set(data.habits.map(h => h.id))
+    const merged   = [...data.habits]
+    for (const h of cloud.habits) {
+      if (!localIds.has(h.id)) {
+        merged.push({ id: h.id, name: h.name, emoji: h.emoji, createdAt: h.created_at })
+      }
+    }
+
+    // Merge completions: union of dates per habit
+    const mergedComp = { ...data.completions }
+    for (const [habitId, dates] of Object.entries(cloud.completions)) {
+      const key   = Number(habitId)
+      const local = new Set(mergedComp[key] || [])
+      for (const d of dates) local.add(d)
+      mergedComp[key] = [...local]
+    }
+
+    persist(email, merged, mergedComp)
+    set({ habits: merged, completions: mergedComp })
   },
 
   addHabit: (habit) => {
@@ -107,6 +132,7 @@ const useHabitStore = create((set, get) => ({
     const habits   = [...get().habits, newHabit]
     persist(get().userEmail, habits, get().completions)
     set({ habits })
+    pushToCloud(habits, get().completions)
   },
 
   completeHabit: (id) => {
@@ -116,6 +142,7 @@ const useHabitStore = create((set, get) => ({
     const completions = { ...get().completions, [id]: [...prev, today] }
     persist(get().userEmail, get().habits, completions)
     set({ completions })
+    pushToCloud(get().habits, completions)
   },
 
   // Selectors

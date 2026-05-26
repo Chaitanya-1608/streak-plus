@@ -8,7 +8,8 @@ import HabitDetailScreen from '../screens/HabitDetailScreen'
 import MilestoneScreen   from '../screens/MilestoneScreen'
 import InstallPrompt     from '../components/ui/InstallPrompt'
 import { scheduleNudges, isNotifEnabled } from '../utils/notifications'
-import useHabitStore     from '../store/useHabitStore'
+import useHabitStore          from '../store/useHabitStore'
+import { pushToCloud }        from '../utils/sync'
 
 function initialScreen() {
   if (localStorage.getItem('streak-auth'))       return 'dashboard'
@@ -31,6 +32,16 @@ export default function AppNavigator() {
   // Re-schedule nudges if returning user already granted permission
   useEffect(() => {
     if (localStorage.getItem('streak-auth') && isNotifEnabled()) scheduleNudges()
+  }, [])
+
+  // When device comes back online, push any locally queued changes to cloud
+  useEffect(() => {
+    const flush = () => {
+      const { habits, completions } = useHabitStore.getState()
+      pushToCloud(habits, completions)
+    }
+    window.addEventListener('online', flush)
+    return () => window.removeEventListener('online', flush)
   }, [])
 
   const handleWelcomeContinue = () => {

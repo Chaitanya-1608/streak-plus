@@ -140,6 +140,8 @@ function SignUp({ onSuccess, onSwitch }) {
     }
 
     setLoading(true)
+
+    // MX domain check
     try {
       const res  = await fetch(`${API_BASE}/auth/welcome`, {
         method:  'POST',
@@ -158,7 +160,24 @@ function SignUp({ onSuccess, onSwitch }) {
 
     const user = { firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), password }
     saveUser(user)
-    localStorage.setItem('streak-auth', JSON.stringify({ firstName: user.firstName, lastName: user.lastName, email: user.email }))
+
+    // Register with backend to get JWT for cloud sync
+    let token = null
+    try {
+      const res  = await fetch(`${API_BASE}/auth/register`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ firstName: user.firstName, lastName: user.lastName, email: user.email, password }),
+      })
+      const data = await res.json()
+      if (data.token) token = data.token
+    } catch {
+      // backend unreachable — sync will happen next time online
+    }
+
+    localStorage.setItem('streak-auth', JSON.stringify({
+      firstName: user.firstName, lastName: user.lastName, email: user.email, ...(token && { token }),
+    }))
     setLoading(false)
     onSuccess(user.email)
   }
@@ -232,7 +251,7 @@ function SignIn({ onSuccess, onSwitch }) {
   const emailValid = isValidEmail(email)
   const canSubmit  = emailValid && password.length >= 1 && !loading
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canSubmit) return
     setLoading(true)
     setError('')
@@ -249,7 +268,23 @@ function SignIn({ onSuccess, onSwitch }) {
       return
     }
 
-    localStorage.setItem('streak-auth', JSON.stringify({ firstName: user.firstName, lastName: user.lastName, email: user.email }))
+    // Get JWT from backend for cloud sync
+    let token = null
+    try {
+      const res  = await fetch(`${API_BASE}/auth/login`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: user.email, password }),
+      })
+      const data = await res.json()
+      if (data.token) token = data.token
+    } catch {
+      // backend unreachable — local-only session
+    }
+
+    localStorage.setItem('streak-auth', JSON.stringify({
+      firstName: user.firstName, lastName: user.lastName, email: user.email, ...(token && { token }),
+    }))
     setLoading(false)
     onSuccess(user.email)
   }

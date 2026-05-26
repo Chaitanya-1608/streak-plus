@@ -13,6 +13,9 @@ const habitRoutes =
 const analyticsRoutes =
   require('./routes/analytics.routes')
 
+const syncRoutes =
+  require('./routes/sync.routes')
+
 const app = express()
 
 // CORS
@@ -53,6 +56,11 @@ app.use(
 app.use(
   '/api/analytics',
   analyticsRoutes
+)
+
+app.use(
+  '/api/sync',
+  syncRoutes
 )
 
 // HEALTH CHECK

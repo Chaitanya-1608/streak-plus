@@ -1,115 +1,67 @@
 const supabase = require('../config/supabase')
-const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
+const bcrypt   = require('bcryptjs')
+const jwt      = require('jsonwebtoken')
 
-const generateToken = (user) => {
-  return jwt.sign(
-    { id: user.id, email: user.email },
-    process.env.JWT_SECRET,
-    { expiresIn: '1h' }
-  )
-}
+const makeToken = (user) =>
+  jwt.sign({ id: String(user.id), email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' })
 
 exports.register = async (req, res) => {
   try {
-
-    const { name, email, password } = req.body
+    const { firstName, lastName, email, password } = req.body
+    if (!firstName || !email || !password) {
+      return res.status(400).json({ success: false, message: 'Missing fields' })
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10)
+    const name = `${firstName.trim()} ${(lastName || '').trim()}`.trim()
 
     const { data, error } = await supabase
       .from('users')
-      .insert([
-        {
-          name,
-          email,
-          password: hashedPassword
-        }
-      ])
+      .insert([{ name, email: email.toLowerCase().trim(), password: hashedPassword }])
       .select()
+      .single()
 
     if (error) {
+      // Duplicate email → unique constraint violation
+      const isDupe = error.code === '23505' || (error.message || '').includes('unique')
       return res.status(400).json({
         success: false,
-        error
+        message: isDupe ? 'Email already registered' : error.message,
       })
     }
 
-    res.json({
-      success: true,
-      message: 'User registered successfully',
-      data
-    })
-
+    res.json({ success: true, token: makeToken(data), userId: String(data.id) })
   } catch (err) {
-
-    res.status(500).json({
-      success: false,
-      message: err.message
-    })
-
+    res.status(500).json({ success: false, message: err.message })
   }
 }
 
 exports.login = async (req, res) => {
-
   try {
-
     const { email, password } = req.body
 
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('email', email)
+      .eq('email', email.toLowerCase().trim())
       .single()
 
     if (error || !data) {
-      return res.status(400).json({
-        success: false,
-        message: 'User not found'
-      })
+      return res.status(400).json({ success: false, message: 'User not found' })
     }
 
-    const isMatch = await bcrypt.compare(
-      password,
-      data.password
-    )
-
+    const isMatch = await bcrypt.compare(password, data.password)
     if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid password'
-      })
+      return res.status(400).json({ success: false, message: 'Invalid password' })
     }
-    const token = jwt.sign(
-  {
-    id: data.id,
-    email: data.email
-  },
-  process.env.JWT_SECRET,
-  {
-    expiresIn: '7d'
-  }
-)
 
     res.json({
       success: true,
-      message: 'Login successful',
-      token,
-      user: {
-        id: data.id,
-        name: data.name,
-        email: data.email
-      }
+      token: makeToken(data),
+      userId: String(data.id),
+      user: { id: String(data.id), name: data.name, email: data.email },
     })
-
   } catch (err) {
-
-    res.status(500).json({
-      success: false,
-      message: err.message
-    })
-
+    res.status(500).json({ success: false, message: err.message })
   }
-
 }

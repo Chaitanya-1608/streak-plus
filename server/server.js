@@ -21,6 +21,9 @@ const feedbackRoutes =
 
 const app = express()
 
+// Trust Render's reverse proxy so rate limiting uses real client IPs
+app.set('trust proxy', 1)
+
 // CORS
 
 app.use(cors({

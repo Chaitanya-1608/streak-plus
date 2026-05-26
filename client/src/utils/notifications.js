@@ -10,7 +10,9 @@ const INIT_KEY = 'streak-notif-init'
 
 function getIncompleteNames() {
   try {
-    const raw = JSON.parse(localStorage.getItem('streak-habits-v2') || '{}')
+    const email = JSON.parse(localStorage.getItem('streak-auth') || '{}').email || ''
+    const key   = email ? `streak-habits-v2-${email.toLowerCase()}` : 'streak-habits-v2'
+    const raw   = JSON.parse(localStorage.getItem(key) || '{}')
     const today = new Date().toISOString().split('T')[0]
     return (raw.habits || [])
       .filter(h => !(raw.completions?.[h.id] || []).includes(today))

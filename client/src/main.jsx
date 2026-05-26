@@ -6,6 +6,10 @@ import App from './App'
 
 import './index.css'
 
+if (import.meta.env.DEV) {
+  import('./dev/seedDemoHabit.js')
+}
+
 import {
 
   HabitProvider

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import useHabitStore from '../store/useHabitStore'
+import useHabitStore, { localISO } from '../store/useHabitStore'
 
 const MOODS = [
   { emoji: '😣', label: 'Rough',   value: 1 },
@@ -28,14 +28,14 @@ const QUOTES = [
   'The flame you protect today lights the path you walk tomorrow.',
 ]
 
-const TODAY = new Date().toISOString().split('T')[0]
+const TODAY = localISO()
 
 function buildHeatmap(allDates) {
   const doneSet = new Set(allDates)
-  const end = new Date(); end.setHours(0, 0, 0, 0)
+  const end     = new Date()
   return Array.from({ length: 91 }, (_, i) => {
     const d   = new Date(end); d.setDate(end.getDate() - (90 - i))
-    const iso = d.toISOString().split('T')[0]
+    const iso = localISO(d)
     return { date: iso, done: doneSet.has(iso) }
   })
 }
@@ -64,7 +64,7 @@ function StreakHero({ streak }) {
 
 // ── Mood check-in ───────────────────────────────────────────────────────────
 function MoodCheckIn({ habitId }) {
-  const key = `mood-${habitId}-${TODAY}`
+  const key = `mood-${habitId}-${localISO()}`
   const [selected, setSelected] = useState(() => Number(localStorage.getItem(key)) || null)
 
   const pick = (value) => {
@@ -146,7 +146,7 @@ function HeatmapGrid({ allDates }) {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.003 * w }}
                 title={cell.date}
-                className={`aspect-square rounded-[2px] ${cell.date === TODAY ? 'ring-1 ring-gold/60' : ''} ${
+                className={`aspect-square rounded-full ${cell.date === TODAY ? 'ring-2 ring-gold/50 ring-offset-1 ring-offset-bg' : ''} ${
                   cell.done ? 'bg-accent' : 'bg-surface2'
                 }`}
               />

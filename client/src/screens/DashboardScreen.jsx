@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Header from '../components/core/Header'
 import HabitList from '../components/core/HabitList'
 import AddHabitSheet from '../components/bottomsheet/AddHabitSheet'
-import useHabitStore from '../store/useHabitStore'
+import useHabitStore, { localISO } from '../store/useHabitStore'
 import { requestAndSchedule, isNotifEnabled } from '../utils/notifications'
 
-const TODAY_ISO  = new Date().toISOString().split('T')[0]
+const TODAY_ISO  = localISO()   // local calendar date — avoids UTC day-offset bug
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const CIRC       = 2 * Math.PI * 44   // r=44 in 100×100 viewBox
 
@@ -134,14 +134,14 @@ function WeekStrip({ weekSummary }) {
   )
 }
 
-// ── Mini heatmap (10 weeks × 7 days) ───────────────────────────────────────
+// ── Mini heatmap (10 weeks × 7 days) — circles ─────────────────────────────
 function MiniHeatmap() {
   const { habits, completions } = useHabitStore()
 
-  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const today = new Date()
   const cells = Array.from({ length: 70 }, (_, i) => {
     const d   = new Date(today); d.setDate(today.getDate() - (69 - i))
-    const iso = d.toISOString().split('T')[0]
+    const iso = localISO(d)   // local date — matches how completions are stored
     const count = habits.filter(h => (completions[h.id] || []).includes(iso)).length
     const pct   = habits.length > 0 ? count / habits.length : 0
     return { iso, pct }
@@ -157,17 +157,17 @@ function MiniHeatmap() {
       className="mt-6 pb-4"
     >
       <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-3">Activity</p>
-      <div className="flex gap-1">
+      <div className="flex gap-1.5">
         {cols.map((col, w) => (
-          <div key={w} className="flex flex-col gap-1 flex-1">
+          <div key={w} className="flex flex-col gap-1.5 flex-1">
             {col.map(({ iso, pct }) => (
               <div
                 key={iso}
-                className={`aspect-square rounded-[2px] ${iso === TODAY_ISO ? 'ring-1 ring-gold/60' : ''} ${
-                  pct === 0   ? 'bg-surface2' :
-                  pct < 0.5   ? 'bg-accent/25' :
-                  pct < 1     ? 'bg-accent/55' :
-                                'bg-accent'
+                className={`aspect-square rounded-full ${iso === TODAY_ISO ? 'ring-2 ring-gold/50 ring-offset-1 ring-offset-bg' : ''} ${
+                  pct === 0 ? 'bg-surface2' :
+                  pct < 0.5 ? 'bg-accent/30' :
+                  pct < 1   ? 'bg-accent/60' :
+                              'bg-accent'
                 }`}
               />
             ))}

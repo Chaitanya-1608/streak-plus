@@ -1,6 +1,11 @@
 import { create } from 'zustand'
 
-const TODAY = () => new Date().toISOString().split('T')[0]
+// Always use LOCAL calendar date — toISOString() returns UTC which causes day-offset bugs
+// when the user's timezone is ahead of UTC (e.g. IST = UTC+5:30).
+export const localISO = (date = new Date()) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
+const TODAY = () => localISO()
 
 const load = () => {
   try {
@@ -23,9 +28,9 @@ const computeStreak = (dates) => {
   for (const d of sorted) {
     if (d === cursor) {
       streak++
-      const prev = new Date(cursor)
+      const prev = new Date(cursor + 'T12:00:00') // noon avoids DST edge cases
       prev.setDate(prev.getDate() - 1)
-      cursor = prev.toISOString().split('T')[0]
+      cursor = localISO(prev)
     } else if (d < cursor) {
       break
     }
@@ -38,32 +43,34 @@ const computeLongest = (dates) => {
   const sorted = [...dates].sort()
   let longest = 1, current = 1
   for (let i = 1; i < sorted.length; i++) {
-    const diff = (new Date(sorted[i]) - new Date(sorted[i - 1])) / 86400000
+    const a   = new Date(sorted[i - 1] + 'T12:00:00')
+    const b   = new Date(sorted[i]     + 'T12:00:00')
+    const diff = Math.round((b - a) / 86400000)
     if (diff === 1) { current++; if (current > longest) longest = current }
     else if (diff > 1) { current = 1 }
   }
   return longest
 }
 
-// Returns 7 dots for Mon–Sun of the current week
+// Returns 7 dots for Mon–Sun of the current week using LOCAL dates
 const weekDots = (completions, habitId, createdAt) => {
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const monday = new Date(today)
+  const today  = new Date()
   const dayIdx = today.getDay() === 0 ? 6 : today.getDay() - 1
+  const monday = new Date(today)
   monday.setDate(today.getDate() - dayIdx)
+  monday.setHours(0, 0, 0, 0)
 
   const doneSet = new Set(completions[habitId] || [])
-  const created = createdAt ? new Date(createdAt) : new Date(0)
-  created.setHours(0, 0, 0, 0)
+  const created = createdAt ? new Date(createdAt + 'T00:00:00') : new Date(0)
 
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday); d.setDate(monday.getDate() + i)
-    const iso = d.toISOString().split('T')[0]
-    let state
-    if (d > today)    state = 'future'
-    else if (d < created) state = 'future'
-    else if (doneSet.has(iso)) state = 'done'
-    else               state = 'missed'
+    const d   = new Date(monday); d.setDate(monday.getDate() + i)
+    const iso = localISO(d)
+    const state =
+      d > today   ? 'future'
+      : d < created ? 'future'
+      : doneSet.has(iso) ? 'done'
+      : 'missed'
     return { date: iso, state }
   })
 }
@@ -79,60 +86,48 @@ const useHabitStore = create((set, get) => ({
       h => h.name.toLowerCase() === habit.name.toLowerCase()
     )
     if (exists) return
-
     const newHabit = { id: Date.now(), createdAt: TODAY(), ...habit }
-    const habits = [...get().habits, newHabit]
+    const habits   = [...get().habits, newHabit]
     persist(habits, get().completions)
     set({ habits })
   },
 
   completeHabit: (id) => {
     const today = TODAY()
-    const prev = get().completions[id] || []
+    const prev  = get().completions[id] || []
     if (prev.includes(today)) return
-
     const completions = { ...get().completions, [id]: [...prev, today] }
     persist(get().habits, completions)
     set({ completions })
   },
 
-  // Derived selectors
-  getWeekDots: (id) => {
-    const habit = get().habits.find(h => h.id === id)
-    return weekDots(get().completions, id, habit?.createdAt)
-  },
+  // Selectors
+  getWeekDots:      (id) => weekDots(get().completions, id, get().habits.find(h => h.id === id)?.createdAt),
   getCurrentStreak: (id) => computeStreak(get().completions[id] || []),
   getLongestStreak: (id) => computeLongest(get().completions[id] || []),
   isCompletedToday: (id) => (get().completions[id] || []).includes(TODAY()),
   getAllDates:       (id) => [...(get().completions[id] || [])].sort(),
 
-  // Aggregate stats across all habits
   getTodayCount: () => {
     const today = TODAY()
     return get().habits.filter(h => (get().completions[h.id] || []).includes(today)).length
   },
-  getTopStreak: () => {
-    return Math.max(0, ...get().habits.map(h => computeStreak(get().completions[h.id] || [])))
-  },
-  getPersonalBest: () => {
-    return Math.max(0, ...get().habits.map(h => computeLongest(get().completions[h.id] || [])))
-  },
-  getAllTimeCompletions: () => {
-    return Object.values(get().completions).reduce((sum, arr) => sum + arr.length, 0)
-  },
+  getTopStreak:    () => Math.max(0, ...get().habits.map(h => computeStreak(get().completions[h.id] || []))),
+  getPersonalBest: () => Math.max(0, ...get().habits.map(h => computeLongest(get().completions[h.id] || []))),
+  getAllTimeCompletions: () => Object.values(get().completions).reduce((sum, arr) => sum + arr.length, 0),
 
-  // Returns 7 objects { date, completedCount, totalHabits } for Mon–Sun of current week
+  // 7 slots Mon–Sun using LOCAL dates
   getWeekSummary: () => {
-    const habits = get().habits
-    const completions = get().completions
-    const today = new Date(); today.setHours(0, 0, 0, 0)
-    const monday = new Date(today)
+    const { habits, completions } = get()
+    const today  = new Date()
     const dayIdx = today.getDay() === 0 ? 6 : today.getDay() - 1
+    const monday = new Date(today)
     monday.setDate(today.getDate() - dayIdx)
+    monday.setHours(0, 0, 0, 0)
 
     return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(monday); d.setDate(monday.getDate() + i)
-      const iso = d.toISOString().split('T')[0]
+      const d              = new Date(monday); d.setDate(monday.getDate() + i)
+      const iso            = localISO(d)
       const completedCount = habits.filter(h => (completions[h.id] || []).includes(iso)).length
       return { date: iso, completedCount, totalHabits: habits.length }
     })

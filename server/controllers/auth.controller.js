@@ -1,7 +1,7 @@
 const supabase = require('../config/supabase')
 const bcrypt   = require('bcryptjs')
 const jwt      = require('jsonwebtoken')
-const { sendWelcomeEmail, sendAdminNewUser } = require('../utils/email')
+const { sendAdminNewUser } = require('../utils/email')
 
 const makeToken = (user) =>
   jwt.sign({ id: String(user.id), email: user.email }, process.env.JWT_SECRET, { expiresIn: '30d' })
@@ -34,8 +34,7 @@ exports.register = async (req, res) => {
     const { count } = await supabase.from('users').select('*', { count: 'exact', head: true })
     const userNumber = (count || 1) + 99
 
-    // Fire-and-forget notifications
-    sendWelcomeEmail(data.email, firstName).catch(() => {})
+    // Notify admin of new signup (welcome email is sent via /welcome route)
     sendAdminNewUser({ name, email: data.email, userNumber }).catch(() => {})
 
     res.json({ success: true, token: makeToken(data), userId: String(data.id), userNumber })

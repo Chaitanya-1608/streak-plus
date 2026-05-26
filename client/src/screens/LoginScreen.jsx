@@ -238,7 +238,7 @@ function SignUp({ onSuccess, onSwitch }) {
               transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
               className="w-4 h-4 border-2 border-bg/30 border-t-bg rounded-full inline-block"
             />
-            Sending welcome email…
+            Creating account…
           </>
         ) : 'Create account'}
       </motion.button>

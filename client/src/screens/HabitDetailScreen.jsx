@@ -112,13 +112,13 @@ function MilestoneRow({ streak }) {
               className={`flex-shrink-0 flex flex-col items-center gap-2 px-4 py-4 rounded-[18px] border min-w-[70px] transition-all ${
                 unlocked
                   ? 'bg-accent/10 border-accent/35'
-                  : 'bg-surface border-surface2 opacity-40'
+                  : 'bg-surface border-surface2'
               }`}
             >
-              <span className="text-xl">{unlocked ? emoji : '🔒'}</span>
+              <span className={`text-xl ${unlocked ? '' : 'opacity-40'}`}>{unlocked ? emoji : '🔒'}</span>
               <div className="text-center">
-                <p className={`text-[10px] font-medium ${unlocked ? 'text-accent' : 'text-zinc-600'}`}>{label}</p>
-                <p className="text-[9px] text-zinc-700">{days}d</p>
+                <p className={`text-[10px] font-medium ${unlocked ? 'text-accent' : 'text-zinc-400'}`}>{label}</p>
+                <p className={`text-[9px] ${unlocked ? 'text-zinc-700' : 'text-zinc-600'}`}>{days}d</p>
               </div>
             </div>
           )

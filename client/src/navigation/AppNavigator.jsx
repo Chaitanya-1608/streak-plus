@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 import WelcomeScreen       from '../screens/WelcomeScreen'
 import OnboardingScreen    from '../screens/OnboardingScreen'
@@ -21,8 +21,11 @@ function initialScreen() {
 export default function AppNavigator() {
   const [screen,          setScreen]          = useState(initialScreen)
   const [selectedHabit,   setSelectedHabit]   = useState(null)
-  const [showInstall,     setShowInstall]      = useState(false)
-  const [installDismissed, setInstallDismissed] = useState(false)
+  const [showInstall,      setShowInstall]      = useState(false)
+  const [installDismissed, setInstallDismissed] = useState(
+    !!localStorage.getItem('streak-install-dismissed')
+  )
+  const installTriggeredRef = useRef(false)
   const [builderData,     setBuilderData]      = useState(null)  // { name, emoji }
   const [graduatedHabit,  setGraduatedHabit]   = useState(null)  // habit object
 
@@ -37,6 +40,17 @@ export default function AppNavigator() {
   useEffect(() => {
     if (localStorage.getItem('streak-auth') && isNotifEnabled()) scheduleNudges()
   }, [])
+
+  // Show install prompt once per session when user reaches dashboard
+  useEffect(() => {
+    if (screen !== 'dashboard') return
+    if (installTriggeredRef.current) return
+    if (localStorage.getItem('streak-install-dismissed')) return
+    if (window.matchMedia('(display-mode: standalone)').matches) return
+    installTriggeredRef.current = true
+    const t = setTimeout(() => setShowInstall(true), 5000)
+    return () => clearTimeout(t)
+  }, [screen])
 
   // When device comes back online, push any locally queued changes to cloud
   useEffect(() => {
@@ -60,7 +74,6 @@ export default function AppNavigator() {
   const handleLogin = (email) => {
     useHabitStore.getState().loadForUser(email)
     setScreen('dashboard')
-    setTimeout(() => setShowInstall(true), 5000)
   }
 
   const openHabit = (habit) => {
@@ -142,7 +155,11 @@ export default function AppNavigator() {
       {screen === 'dashboard' && (
         <InstallPrompt
           show={showInstall}
-          onDismiss={() => { setShowInstall(false); setInstallDismissed(true) }}
+          onDismiss={() => {
+            setShowInstall(false)
+            setInstallDismissed(true)
+            localStorage.setItem('streak-install-dismissed', '1')
+          }}
         />
       )}
     </>

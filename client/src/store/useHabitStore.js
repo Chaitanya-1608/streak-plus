@@ -208,6 +208,14 @@ const useHabitStore = create((set, get) => ({
     )
   },
 
+  removeHabit: (id) => {
+    const habits = get().habits.filter(h => h.id !== id)
+    const { [id]: _removed, ...completions } = get().completions
+    persist(get().userEmail, habits, completions)
+    set({ habits, completions })
+    pushToCloud(habits, completions)
+  },
+
   completeHabit: (id) => {
     const today = TODAY()
     const prev  = get().completions[id] || []

@@ -160,7 +160,8 @@ function HeatmapGrid({ allDates }) {
 
 // ── Main screen ─────────────────────────────────────────────────────────────
 export default function HabitDetailScreen({ habit, goBack }) {
-  const { getCurrentStreak, getLongestStreak, getAllDates, isCompletedToday, completeHabit } = useHabitStore()
+  const { getCurrentStreak, getLongestStreak, getAllDates, isCompletedToday, completeHabit, removeHabit } = useHabitStore()
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   if (!habit) return null
 
@@ -173,6 +174,12 @@ export default function HabitDetailScreen({ habit, goBack }) {
     if (done) return
     completeHabit(habit.id)
     if (navigator.vibrate) navigator.vibrate(50)
+  }
+
+  const handleDelete = () => {
+    if (!confirmDelete) { setConfirmDelete(true); return }
+    removeHabit(habit.id)
+    goBack()
   }
 
   return (
@@ -215,6 +222,21 @@ export default function HabitDetailScreen({ habit, goBack }) {
         <MoodCheckIn habitId={habit.id} />
         <MilestoneRow streak={streak} />
         <HeatmapGrid allDates={allDates} />
+
+        {/* Delete */}
+        <div className="mt-8 pt-6 border-t border-surface2">
+          <button
+            onClick={handleDelete}
+            onBlur={() => setConfirmDelete(false)}
+            className={`w-full py-3.5 rounded-[18px] text-sm font-medium transition-all duration-200 ${
+              confirmDelete
+                ? 'bg-red-500/15 border border-red-500/40 text-red-400'
+                : 'bg-surface border border-surface2 text-zinc-600'
+            }`}
+          >
+            {confirmDelete ? 'Tap again to confirm removal' : 'Remove habit'}
+          </button>
+        </div>
       </div>
     </motion.div>
   )

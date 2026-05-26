@@ -127,7 +127,7 @@ export default function AppNavigator() {
           openBuilder={openBuilder}
           openGraduation={openGraduation}
           openMilestone={() => setScreen('milestone')}
-          onPreviewGraduation={import.meta.env.DEV ? openPreviewGraduation : undefined}
+          onPreviewGraduation={openPreviewGraduation}
           showInstallBanner={installDismissed}
           onInstall={() => {
             const p = window.__deferredInstallPrompt

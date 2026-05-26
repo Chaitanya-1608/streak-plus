@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Header from '../components/core/Header'
 import HabitList from '../components/core/HabitList'
@@ -376,6 +376,13 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
   const weekSummary  = getWeekSummary()
   const todayCount   = getTodayCount()
 
+  const longPressTimer = useRef(null)
+  const startLongPress = useCallback(() => {
+    if (!onPreviewGraduation) return
+    longPressTimer.current = setTimeout(onPreviewGraduation, 2000)
+  }, [onPreviewGraduation])
+  const cancelLongPress = useCallback(() => clearTimeout(longPressTimer.current), [])
+
   const [graceHabit, setGraceHabit] = useState(null)
   const [showGrace,  setShowGrace]  = useState(false)
   const [toast,      setToast]      = useState('')
@@ -438,7 +445,14 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
         {/* Building habits section */}
         {buildHabits.length > 0 && (
           <>
-            <div className="flex items-center justify-between mt-7 mb-1">
+            <div
+              className="flex items-center justify-between mt-7 mb-1"
+              onTouchStart={startLongPress}
+              onTouchEnd={cancelLongPress}
+              onMouseDown={startLongPress}
+              onMouseUp={cancelLongPress}
+              onMouseLeave={cancelLongPress}
+            >
               <p className="text-[11px] text-zinc-500 uppercase tracking-widest">Building 🌱</p>
               <p className="text-[11px] text-teal">7-day trial</p>
             </div>

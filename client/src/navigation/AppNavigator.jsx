@@ -22,6 +22,7 @@ export default function AppNavigator() {
   const [screen,          setScreen]          = useState(initialScreen)
   const [selectedHabit,   setSelectedHabit]   = useState(null)
   const [showInstall,     setShowInstall]      = useState(false)
+  const [installDismissed, setInstallDismissed] = useState(false)
   const [builderData,     setBuilderData]      = useState(null)  // { name, emoji }
   const [graduatedHabit,  setGraduatedHabit]   = useState(null)  // habit object
 
@@ -99,6 +100,17 @@ export default function AppNavigator() {
           openBuilder={openBuilder}
           openGraduation={openGraduation}
           openMilestone={() => setScreen('milestone')}
+          showInstallBanner={installDismissed}
+          onInstall={() => {
+            const p = window.__deferredInstallPrompt
+            if (p) {
+              p.prompt()
+              p.userChoice.then(() => {
+                window.__deferredInstallPrompt = null
+                setInstallDismissed(false)
+              })
+            }
+          }}
         />
       )}
 
@@ -128,7 +140,10 @@ export default function AppNavigator() {
 
       {/* Only show install prompt when user is on the dashboard, not mid-wizard or mid-flow */}
       {screen === 'dashboard' && (
-        <InstallPrompt show={showInstall} onDismiss={() => setShowInstall(false)} />
+        <InstallPrompt
+          show={showInstall}
+          onDismiss={() => { setShowInstall(false); setInstallDismissed(true) }}
+        />
       )}
     </>
   )

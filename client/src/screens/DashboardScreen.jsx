@@ -336,7 +336,34 @@ function Toast({ message }) {
   )
 }
 
-export default function DashboardScreen({ openHabit, openBuilder, openGraduation }) {
+// ── Install banner (shown after user taps "Not now" on the install sheet) ────
+function InstallBanner({ onInstall }) {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mt-4 flex items-center gap-3 px-4 py-3 rounded-[16px] bg-surface border border-surface2"
+    >
+      <span className="text-lg flex-shrink-0">📲</span>
+      <p className="flex-1 text-zinc-500 text-xs leading-snug">
+        {isIOS
+          ? 'Tap Share → Add to Home Screen to install Streak+.'
+          : 'Add to home screen for offline access and daily nudges.'}
+      </p>
+      {!isIOS && (
+        <button
+          onClick={onInstall}
+          className="flex-shrink-0 px-3 py-1.5 rounded-[10px] bg-accent/15 text-accent text-xs font-medium"
+        >
+          Install
+        </button>
+      )}
+    </motion.div>
+  )
+}
+
+export default function DashboardScreen({ openHabit, openBuilder, openGraduation, showInstallBanner, onInstall }) {
   const {
     habits, addHabit,
     getTodayCount, getTopStreak, getPersonalBest, getWeekSummary,
@@ -402,6 +429,7 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
         </motion.div>
 
         <UserNumberCard />
+        {showInstallBanner && <InstallBanner onInstall={onInstall} />}
         <NotifCard />
 
         {/* Building habits section */}

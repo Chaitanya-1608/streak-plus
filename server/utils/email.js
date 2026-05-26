@@ -57,7 +57,7 @@ function welcomeHtml(firstName) {
 
     <!-- CTA -->
     <div style="text-align:center;margin-bottom:32px;">
-      <a href="${process.env.APP_URL || 'https://streak-plus.onrender.com'}"
+      <a href="${process.env.APP_URL || 'https://streak-plus.vercel.app/'}"
          style="display:inline-block;background:#DBAD28;color:#1a0f00;text-decoration:none;font-weight:700;font-size:15px;padding:14px 40px;border-radius:14px;letter-spacing:-0.2px;">
         Open Streak+ →
       </a>

@@ -213,7 +213,7 @@ export default function AddHabitSheet({ addHabit, onOpenBuilder }) {
                   : 'bg-surface2 text-zinc-600 opacity-40 cursor-not-allowed'
               }`}
             >
-              {tab === 'quick' ? 'Create Habit' : 'Start 5-step wizard →'}
+              {tab === 'quick' ? 'Create Habit' : "Let's begin building →"}
             </motion.button>
           </motion.div>
         )}

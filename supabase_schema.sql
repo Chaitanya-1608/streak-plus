@@ -26,3 +26,7 @@ ALTER TABLE habits ADD COLUMN IF NOT EXISTS habit_stack        TEXT;
 ALTER TABLE habits ADD COLUMN IF NOT EXISTS minimum_version    TEXT;
 ALTER TABLE habits ADD COLUMN IF NOT EXISTS reward             TEXT;
 ALTER TABLE habits ADD COLUMN IF NOT EXISTS graduated_at       TEXT;
+
+-- ── Grace recovery column (run this block in Supabase SQL Editor) ─────────────
+-- Stores the timestamp when grace was last used. NULL = never used.
+ALTER TABLE habits ADD COLUMN IF NOT EXISTS grace_used_at TIMESTAMPTZ;

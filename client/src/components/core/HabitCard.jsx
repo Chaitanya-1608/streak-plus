@@ -8,12 +8,23 @@ const PARTICLES = Array.from({ length: 6 }, (_, i) => ({
   color: ['#DBAD28', '#EAC775', '#9CBD44'][i % 3],
 }))
 
-export default function HabitCard({ habit, openHabit }) {
-  const { completeHabit, getCurrentStreak, isCompletedToday } = useHabitStore()
+function getYesterdayISO() {
+  const d = new Date(); d.setDate(d.getDate() - 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
-  const streak  = getCurrentStreak(habit.id)
-  const done    = isCompletedToday(habit.id)
+export default function HabitCard({ habit, openHabit }) {
+  const { completeHabit, getCurrentStreak, isCompletedToday, getLongestStreak, getLastCompletion } = useHabitStore()
+
+  const streak         = getCurrentStreak(habit.id)
+  const done           = isCompletedToday(habit.id)
+  const longest        = getLongestStreak(habit.id)
+  const lastCompletion = getLastCompletion(habit.id)
   const [burst, setBurst] = useState(false)
+
+  // Broken = streak 0, had history before, last completion was before yesterday (missed 2+ days)
+  const yesterday = getYesterdayISO()
+  const isBroken  = streak === 0 && longest > 0 && lastCompletion !== null && lastCompletion < yesterday
 
   const isBuilding = habit.mode === 'building'
   const trialDay   = Math.min(streak, 7)
@@ -27,9 +38,11 @@ export default function HabitCard({ habit, openHabit }) {
     setTimeout(() => setBurst(false), 480)
   }
 
-  const detailText = isBuilding
-    ? done ? `Day ${trialDay} of 7 · Done ✓` : `Day ${trialDay} of 7 · Building`
-    : done ? `${habit.frequency || 'Daily'} · Done ✓` : habit.frequency || 'Daily'
+  const detailText = isBroken
+    ? `Your ${longest}-day streak was your best. Start again.`
+    : isBuilding
+      ? done ? `Day ${trialDay} of 7 · Done ✓` : `Day ${trialDay} of 7 · Building`
+      : done ? `${habit.frequency || 'Daily'} · Done ✓` : habit.frequency || 'Daily'
 
   return (
     <motion.div
@@ -44,10 +57,12 @@ export default function HabitCard({ habit, openHabit }) {
         <button
           onClick={() => openHabit(habit)}
           className={`w-12 h-12 rounded-[14px] flex items-center justify-center text-2xl flex-shrink-0 transition-all duration-300 ${
-            done ? 'bg-accent/20' : isBuilding ? 'bg-teal/10' : 'bg-surface2'
+            isBroken ? 'bg-surface2' : done ? 'bg-accent/20' : isBuilding ? 'bg-teal/10' : 'bg-surface2'
           }`}
         >
-          {habit.emoji || '🔥'}
+          <span style={isBroken ? { filter: 'grayscale(1) opacity(0.35)' } : undefined}>
+            {habit.emoji || '🔥'}
+          </span>
         </button>
 
         {/* Name + detail */}
@@ -60,7 +75,12 @@ export default function HabitCard({ habit, openHabit }) {
               </span>
             )}
           </div>
-          <p className={`text-xs mt-0.5 ${done ? 'text-accent/60' : isBuilding ? 'text-teal/60' : 'text-zinc-600'}`}>
+          <p className={`text-xs mt-0.5 ${
+            isBroken   ? 'text-zinc-600' :
+            done       ? 'text-accent/60' :
+            isBuilding ? 'text-teal/60' :
+                        'text-zinc-600'
+          }`}>
             {detailText}
           </p>
         </button>

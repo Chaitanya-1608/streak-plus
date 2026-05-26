@@ -261,17 +261,114 @@ function SectionHeader({ label, count, total }) {
 }
 
 // ── Dashboard ────────────────────────────────────────────────────────────────
+// ── Grace recovery prompt ────────────────────────────────────────────────────
+function GracePrompt({ habit, onRecover, onDismiss }) {
+  return (
+    <>
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/80 z-40"
+        onClick={onDismiss}
+      />
+      {/* Sheet */}
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 340, damping: 32 }}
+        className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-surface rounded-t-[28px] px-6 pt-6 pb-10 z-50"
+      >
+        <div className="w-10 h-1 rounded-full bg-surface2 mx-auto mb-8" />
+
+        {/* Dimmed flame */}
+        <div className="text-7xl text-center mb-5" style={{ filter: 'grayscale(1) opacity(0.25)' }}>
+          🔥
+        </div>
+
+        <h2
+          className="font-heading text-white text-center leading-tight mb-2"
+          style={{ fontSize: 28, fontWeight: 800 }}
+        >
+          Your flame flickered.
+        </h2>
+        <p className="text-zinc-500 text-sm text-center mb-7">
+          It's not out yet. Recover today.
+        </p>
+
+        <button
+          onClick={onRecover}
+          className="w-full py-4 rounded-[18px] bg-accent text-bg font-heading text-base mb-3"
+          style={{ fontWeight: 800 }}
+        >
+          Recover my streak
+        </button>
+
+        <p className="text-zinc-700 text-xs text-center mb-4">
+          You can do this once every 30 days
+        </p>
+
+        <button onClick={onDismiss} className="block mx-auto text-zinc-600 text-sm">
+          Not now
+        </button>
+      </motion.div>
+    </>
+  )
+}
+
+// ── Simple toast ─────────────────────────────────────────────────────────────
+function Toast({ message }) {
+  return (
+    <AnimatePresence>
+      {message && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 8 }}
+          className="fixed bottom-28 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-full bg-surface border border-surface2 text-white text-sm whitespace-nowrap z-[60] shadow-xl"
+        >
+          {message}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 export default function DashboardScreen({ openHabit, openBuilder, openGraduation }) {
   const {
     habits, addHabit,
     getTodayCount, getTopStreak, getPersonalBest, getWeekSummary,
     checkGraduations, graduateHabit,
+    checkGraceEligible, graceRecoverHabit,
   } = useHabitStore()
 
   const topStreak    = getTopStreak()
   const personalBest = getPersonalBest()
   const weekSummary  = getWeekSummary()
   const todayCount   = getTodayCount()
+
+  const [graceHabit, setGraceHabit] = useState(null)
+  const [showGrace,  setShowGrace]  = useState(false)
+  const [toast,      setToast]      = useState('')
+
+  const fireToast = (msg) => {
+    setToast(msg)
+    setTimeout(() => setToast(''), 2500)
+  }
+
+  // Check grace eligibility once on mount
+  useEffect(() => {
+    const eligible = checkGraceEligible()
+    if (eligible) { setGraceHabit(eligible); setShowGrace(true) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleGraceRecover = () => {
+    graceRecoverHabit(graceHabit.id)
+    setShowGrace(false)
+    fireToast('Flame restored 🔥')
+  }
 
   const buildHabits    = habits.filter(h => h.mode === 'building')
   const maintainHabits = habits.filter(h => h.mode !== 'building')
@@ -344,6 +441,19 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
       </div>
 
       <AddHabitSheet addHabit={addHabit} onOpenBuilder={openBuilder} />
+
+      {/* Grace recovery overlay */}
+      <AnimatePresence>
+        {showGrace && graceHabit && (
+          <GracePrompt
+            habit={graceHabit}
+            onRecover={handleGraceRecover}
+            onDismiss={() => setShowGrace(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <Toast message={toast} />
     </div>
   )
 }

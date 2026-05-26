@@ -102,6 +102,7 @@ function normalizeCloudHabit(h) {
     minimumVersion:      h.minimum_version     || '',
     reward:              h.reward              || '',
     graduatedAt:         h.graduated_at        || null,
+    graceUsedAt:         h.grace_used_at       || null,
   }
 }
 
@@ -160,6 +161,7 @@ const useHabitStore = create((set, get) => ({
       id: Date.now(), createdAt: TODAY(),
       mode: 'maintaining', buildStage: 0,
       identityStatement: '', cue: '', habitStack: '', minimumVersion: '', reward: '', graduatedAt: null,
+      graceUsedAt: null,
       ...habit,
     }
     const habits = [...get().habits, newHabit]
@@ -178,7 +180,7 @@ const useHabitStore = create((set, get) => ({
       frequency: 'daily', days: [0, 1, 2, 3, 4, 5, 6],
       mode: 'building', buildStage: 5,
       identityStatement, cue, habitStack, minimumVersion, reward,
-      graduatedAt: null,
+      graduatedAt: null, graceUsedAt: null,
     }
     const habits = [...get().habits, habit]
     persist(get().userEmail, habits, get().completions)
@@ -230,6 +232,54 @@ const useHabitStore = create((set, get) => ({
   getTopStreak:    () => Math.max(0, ...get().habits.map(h => computeStreak(get().completions[h.id] || []))),
   getPersonalBest: () => Math.max(0, ...get().habits.map(h => computeLongest(get().completions[h.id] || []))),
   getAllTimeCompletions: () => Object.values(get().completions).reduce((sum, arr) => sum + arr.length, 0),
+
+  // Returns the most-recent completion date for a habit, or null
+  getLastCompletion: (id) => {
+    const dates = get().completions[id] || []
+    if (!dates.length) return null
+    return [...dates].sort().reverse()[0]
+  },
+
+  // Returns first habit eligible for a grace recovery, or null
+  checkGraceEligible: () => {
+    const { habits, completions } = get()
+    const today      = new Date()
+    const yesterday  = new Date(today); yesterday.setDate(today.getDate() - 1)
+    const twoDaysAgo = new Date(today); twoDaysAgo.setDate(today.getDate() - 2)
+    const yesterdayISO  = localISO(yesterday)
+    const twoDaysAgoISO = localISO(twoDaysAgo)
+    const now = Date.now()
+
+    return habits.find(h => {
+      const dates = completions[h.id] || []
+      if (!dates.length) return false
+      const last = [...dates].sort().reverse()[0]
+      // Last completion must be exactly 2 days ago (missed only yesterday)
+      if (last !== twoDaysAgoISO) return false
+      // Haven't already recovered yesterday
+      if (dates.includes(yesterdayISO)) return false
+      // Grace not used in the last 30 days
+      if (!h.graceUsedAt) return true
+      return (now - new Date(h.graceUsedAt).getTime()) > 30 * 24 * 60 * 60 * 1000
+    }) || null
+  },
+
+  // Marks yesterday completed for a habit and stamps graceUsedAt
+  graceRecoverHabit: (id) => {
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayISO = localISO(yesterday)
+    const completions  = { ...get().completions }
+    const prev = completions[id] || []
+    if (!prev.includes(yesterdayISO)) {
+      completions[id] = [...prev, yesterdayISO]
+    }
+    const habits = get().habits.map(h =>
+      h.id === id ? { ...h, graceUsedAt: new Date().toISOString() } : h
+    )
+    persist(get().userEmail, habits, completions)
+    set({ habits, completions })
+    pushToCloud(habits, completions)
+  },
 
   // 7 slots Mon–Sun using LOCAL dates
   getWeekSummary: () => {

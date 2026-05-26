@@ -20,6 +20,7 @@ exports.push = async (req, res) => {
       minimum_version:    h.minimumVersion      || null,
       reward:             h.reward              || null,
       graduated_at:       h.graduatedAt         || null,
+      grace_used_at:      h.graceUsedAt         || null,
     }))
     const { error } = await supabase.from('habits').upsert(rows, { onConflict: 'user_id,id' })
     if (error) console.error('[sync push] habits:', error.message)

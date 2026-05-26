@@ -1,5 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+
+// Tabler ti-share icon — inlined, no third-party library
+function ShareIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="6" r="3" />
+      <circle cx="18" cy="18" r="3" />
+      <line x1="8.7" y1="10.7" x2="15.3" y2="7.3" />
+      <line x1="8.7" y1="13.3" x2="15.3" y2="16.7" />
+    </svg>
+  )
+}
 
 const PARTICLES = Array.from({ length: 16 }, (_, i) => ({
   id: i,
@@ -16,12 +30,32 @@ const QUOTES = [
 
 export default function GraduationCeremony({ habit, onDone }) {
   const [burst, setBurst] = useState(false)
-  const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)]
+  const [toast, setToast] = useState('')
+  const quoteRef = useRef(QUOTES[Math.floor(Math.random() * QUOTES.length)])
+  const quote    = quoteRef.current
 
   useEffect(() => {
     const t = setTimeout(() => setBurst(true), 300)
     return () => clearTimeout(t)
   }, [])
+
+  const handleShare = async () => {
+    const identity = habit?.identityStatement
+      ? ` I'm becoming someone who ${habit.identityStatement}.`
+      : ''
+    const text = `I've been ${habit?.name || 'building my habit'} for 7 days straight.${identity} 🔥`
+    const shareData = { title: 'Streak+', text, url: window.location.href }
+
+    if (navigator.share) {
+      try { await navigator.share(shareData) } catch { /* user cancelled */ }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${text}\n${window.location.href}`)
+        setToast('Copied to clipboard ✓')
+        setTimeout(() => setToast(''), 2500)
+      } catch { /* clipboard unavailable */ }
+    }
+  }
 
   return (
     <motion.div
@@ -101,7 +135,7 @@ export default function GraduationCeremony({ habit, onDone }) {
         </motion.p>
       </motion.div>
 
-      {/* CTA */}
+      {/* Primary CTA */}
       <motion.button
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -112,6 +146,33 @@ export default function GraduationCeremony({ habit, onDone }) {
       >
         Continue →
       </motion.button>
+
+      {/* Share — secondary outlined button */}
+      <motion.button
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.0 }}
+        whileTap={{ scale: 0.96 }}
+        onClick={handleShare}
+        className="w-full max-w-[320px] mt-3 py-4 rounded-[18px] border border-accent/30 text-accent font-heading text-base flex items-center justify-center gap-2"
+      >
+        <ShareIcon />
+        Share my moment →
+      </motion.button>
+
+      {/* Clipboard fallback toast */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-full bg-surface border border-surface2 text-white text-sm whitespace-nowrap shadow-xl z-50"
+          >
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

@@ -160,7 +160,7 @@ function SignUp({ onSuccess, onSwitch }) {
     saveUser(user)
     localStorage.setItem('streak-auth', JSON.stringify({ firstName: user.firstName, lastName: user.lastName, email: user.email }))
     setLoading(false)
-    onSuccess()
+    onSuccess(user.email)
   }
 
   return (
@@ -251,7 +251,7 @@ function SignIn({ onSuccess, onSwitch }) {
 
     localStorage.setItem('streak-auth', JSON.stringify({ firstName: user.firstName, lastName: user.lastName, email: user.email }))
     setLoading(false)
-    onSuccess()
+    onSuccess(user.email)
   }
 
   return (

@@ -7,16 +7,25 @@ export const localISO = (date = new Date()) =>
 
 const TODAY = () => localISO()
 
-const load = () => {
+// Each user gets an isolated storage key so accounts don't share habit data
+const storageKey = (email) =>
+  email ? `streak-habits-v2-${email.toLowerCase()}` : 'streak-habits-v2'
+
+const getInitialEmail = () => {
+  try { return JSON.parse(localStorage.getItem('streak-auth'))?.email || null }
+  catch { return null }
+}
+
+const load = (email) => {
   try {
-    return JSON.parse(localStorage.getItem('streak-habits-v2')) || { habits: [], completions: {} }
+    return JSON.parse(localStorage.getItem(storageKey(email))) || { habits: [], completions: {} }
   } catch {
     return { habits: [], completions: {} }
   }
 }
 
-const persist = (habits, completions) => {
-  localStorage.setItem('streak-habits-v2', JSON.stringify({ habits, completions }))
+const persist = (email, habits, completions) => {
+  localStorage.setItem(storageKey(email), JSON.stringify({ habits, completions }))
 }
 
 const computeStreak = (dates) => {
@@ -75,11 +84,19 @@ const weekDots = (completions, habitId, createdAt) => {
   })
 }
 
-const saved = load()
+const initialEmail = getInitialEmail()
+const saved        = load(initialEmail)
 
 const useHabitStore = create((set, get) => ({
   habits:      saved.habits,
   completions: saved.completions,
+  userEmail:   initialEmail,
+
+  // Called after login/sign-up to swap in the correct user's data
+  loadForUser: (email) => {
+    const data = load(email)
+    set({ habits: data.habits, completions: data.completions, userEmail: email })
+  },
 
   addHabit: (habit) => {
     const exists = get().habits.some(
@@ -88,7 +105,7 @@ const useHabitStore = create((set, get) => ({
     if (exists) return
     const newHabit = { id: Date.now(), createdAt: TODAY(), ...habit }
     const habits   = [...get().habits, newHabit]
-    persist(habits, get().completions)
+    persist(get().userEmail, habits, get().completions)
     set({ habits })
   },
 
@@ -97,7 +114,7 @@ const useHabitStore = create((set, get) => ({
     const prev  = get().completions[id] || []
     if (prev.includes(today)) return
     const completions = { ...get().completions, [id]: [...prev, today] }
-    persist(get().habits, completions)
+    persist(get().userEmail, get().habits, completions)
     set({ completions })
   },
 

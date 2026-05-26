@@ -8,6 +8,7 @@ import HabitDetailScreen from '../screens/HabitDetailScreen'
 import MilestoneScreen   from '../screens/MilestoneScreen'
 import InstallPrompt     from '../components/ui/InstallPrompt'
 import { scheduleNudges, isNotifEnabled } from '../utils/notifications'
+import useHabitStore     from '../store/useHabitStore'
 
 function initialScreen() {
   if (localStorage.getItem('streak-auth'))       return 'dashboard'
@@ -41,7 +42,8 @@ export default function AppNavigator() {
     }
   }
 
-  const handleLogin = () => {
+  const handleLogin = (email) => {
+    useHabitStore.getState().loadForUser(email)
     setScreen('dashboard')
     setTimeout(() => setShowInstall(true), 600)
   }

@@ -28,6 +28,7 @@ export default function AppNavigator() {
   const installTriggeredRef = useRef(false)
   const [builderData,     setBuilderData]      = useState(null)  // { name, emoji }
   const [graduatedHabit,  setGraduatedHabit]   = useState(null)  // habit object
+  const [previewGrad,     setPreviewGrad]      = useState(false)
 
   // Capture browser install prompt before it fires
   useEffect(() => {
@@ -89,7 +90,20 @@ export default function AppNavigator() {
 
   // Called by DashboardScreen when a habit graduates
   const openGraduation = (habit) => {
+    setPreviewGrad(false)
     setGraduatedHabit(habit)
+    setScreen('graduation')
+  }
+
+  // DEV-only: preview the graduation ceremony without touching streak data
+  const openPreviewGraduation = () => {
+    setPreviewGrad(true)
+    setGraduatedHabit({
+      name: 'Morning Run',
+      emoji: '🏃',
+      identityStatement: 'shows up every day no matter what',
+      mode: 'building',
+    })
     setScreen('graduation')
   }
 
@@ -113,6 +127,7 @@ export default function AppNavigator() {
           openBuilder={openBuilder}
           openGraduation={openGraduation}
           openMilestone={() => setScreen('milestone')}
+          onPreviewGraduation={import.meta.env.DEV ? openPreviewGraduation : undefined}
           showInstallBanner={installDismissed}
           onInstall={() => {
             const p = window.__deferredInstallPrompt
@@ -147,7 +162,8 @@ export default function AppNavigator() {
       {screen === 'graduation' && graduatedHabit && (
         <GraduationCeremony
           habit={graduatedHabit}
-          onDone={() => setScreen('dashboard')}
+          onDone={() => { setPreviewGrad(false); setScreen('dashboard') }}
+          isPreview={previewGrad}
         />
       )}
 

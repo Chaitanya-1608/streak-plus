@@ -363,7 +363,7 @@ function InstallBanner({ onInstall }) {
   )
 }
 
-export default function DashboardScreen({ openHabit, openBuilder, openGraduation, showInstallBanner, onInstall }) {
+export default function DashboardScreen({ openHabit, openBuilder, openGraduation, showInstallBanner, onInstall, onPreviewGraduation }) {
   const {
     habits, addHabit,
     getTodayCount, getTopStreak, getPersonalBest, getWeekSummary,
@@ -444,6 +444,23 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
             </div>
             <HabitList habits={buildHabits} openHabit={openHabit} />
           </>
+        )}
+
+        {import.meta.env.DEV && onPreviewGraduation && (
+          <button
+            onClick={onPreviewGraduation}
+            style={{
+              position: 'fixed', bottom: 24, left: 24, zIndex: 9999,
+              fontSize: 11, padding: '6px 12px', borderRadius: 20,
+              background: '#27272a', color: '#a1a1aa',
+              border: '1px solid #3f3f46', opacity: 0.4,
+              transition: 'opacity 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '0.4'}
+          >
+            ⚡ Preview Graduation
+          </button>
         )}
 
         {/* Maintaining habits section */}

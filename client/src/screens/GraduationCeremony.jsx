@@ -28,7 +28,7 @@ const QUOTES = [
   'The identity you build today is the life you live tomorrow.',
 ]
 
-export default function GraduationCeremony({ habit, onDone }) {
+export default function GraduationCeremony({ habit, onDone, isPreview = false }) {
   const [burst, setBurst] = useState(false)
   const [toast, setToast] = useState('')
   const quoteRef = useRef(QUOTES[Math.floor(Math.random() * QUOTES.length)])
@@ -63,6 +63,11 @@ export default function GraduationCeremony({ habit, onDone }) {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-bg text-white flex flex-col items-center justify-center px-6"
     >
+      {isPreview && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-3 py-1 rounded-full bg-zinc-800 text-zinc-400 text-[10px]">
+          Preview mode — not saved
+        </div>
+      )}
       {/* Particle burst */}
       <div className="relative flex items-center justify-center w-32 h-32 mb-6">
         <AnimatePresence>
@@ -140,9 +145,11 @@ export default function GraduationCeremony({ habit, onDone }) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.85 }}
-        whileTap={{ scale: 0.96 }}
-        onClick={onDone}
+        whileTap={{ scale: isPreview ? 1 : 0.96 }}
+        onClick={isPreview ? undefined : onDone}
+        title={isPreview ? 'This is a preview — graduation needs 7 real days' : undefined}
         className="w-full max-w-[320px] py-4 rounded-[18px] bg-accent text-bg font-heading text-base"
+        style={isPreview ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
       >
         Continue →
       </motion.button>

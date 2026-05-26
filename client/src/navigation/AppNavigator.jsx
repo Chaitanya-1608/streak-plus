@@ -58,7 +58,7 @@ export default function AppNavigator() {
   const handleLogin = (email) => {
     useHabitStore.getState().loadForUser(email)
     setScreen('dashboard')
-    setTimeout(() => setShowInstall(true), 600)
+    setTimeout(() => setShowInstall(true), 5000)
   }
 
   const openHabit = (habit) => {
@@ -125,7 +125,10 @@ export default function AppNavigator() {
         />
       )}
 
-      <InstallPrompt show={showInstall} onDismiss={() => setShowInstall(false)} />
+      {/* Only show install prompt when user is on the dashboard, not mid-wizard or mid-flow */}
+      {screen === 'dashboard' && (
+        <InstallPrompt show={showInstall} onDismiss={() => setShowInstall(false)} />
+      )}
     </>
   )
 }

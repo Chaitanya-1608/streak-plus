@@ -19,6 +19,9 @@ const syncRoutes =
 const feedbackRoutes =
   require('./routes/feedback.routes')
 
+const adminRoutes =
+  require('./routes/admin.routes')
+
 const app = express()
 
 // Trust Render's reverse proxy so rate limiting uses real client IPs
@@ -93,6 +96,9 @@ app.use(
   feedbackLimiter,
   feedbackRoutes
 )
+
+app.use('/admin',     adminRoutes)
+app.use('/api/admin', adminRoutes)
 
 // HEALTH CHECK
 

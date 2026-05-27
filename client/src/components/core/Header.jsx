@@ -218,6 +218,18 @@ export default function Header() {
       sub: '@buildhabitswithcp',
     },
     {
+      icon: '🔗', label: 'Share Streak+',
+      action: () => {
+        closeMenu()
+        const data = { title: 'Streak+', text: 'Build habits. Protect your momentum.', url: 'https://streak-plus.vercel.app/' }
+        if (navigator.share) {
+          navigator.share(data).catch(() => {})
+        } else {
+          navigator.clipboard.writeText('https://streak-plus.vercel.app/').catch(() => {})
+        }
+      },
+    },
+    {
       icon: '↪', label: 'Sign out',
       action: () => { closeMenu(); handleLogout() },
       danger: true,

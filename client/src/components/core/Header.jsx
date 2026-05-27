@@ -214,8 +214,12 @@ export default function Header() {
     },
     {
       icon: '📸', label: 'Follow us',
-      action: () => { closeMenu(); window.open('https://www.instagram.com/buildhabitswithcp', '_blank', 'noopener') },
-      sub: '@buildhabitswithcp',
+      action: () => {
+        closeMenu()
+        const handle = import.meta.env.VITE_INSTA_HANDLE || 'buildhabitswithcp'
+        window.open(`https://www.instagram.com/${handle}`, '_blank', 'noopener')
+      },
+      sub: `@${import.meta.env.VITE_INSTA_HANDLE || 'buildhabitswithcp'}`,
     },
     {
       icon: '🔗', label: 'Share Streak+',

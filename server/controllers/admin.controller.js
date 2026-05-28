@@ -68,7 +68,7 @@ exports.stats = async (req, res) => {
   const streakVals     = Object.values(userMaxStreak)
   const avgStreak      = streakVals.length ? Math.round(streakVals.reduce((a, b) => a + b, 0) / streakVals.length) : 0
   const longestStreak  = streakVals.length ? Math.max(...streakVals) : 0
-  const usersStreak7   = streakVals.filter(s => s >= 7).length
+  const usersStreak21  = streakVals.filter(s => s >= 21).length
 
   res.json({
     totalUsers:      totalUsers   || 0,
@@ -78,7 +78,7 @@ exports.stats = async (req, res) => {
     totalCompletions: totalCompletions || 0,
     avgStreak,
     longestStreak,
-    usersStreak7,
+    usersStreak21,
     updatedAt: new Date().toISOString(),
   })
 }
@@ -295,8 +295,8 @@ exports.dashboard = (req, res) => {
       <div class="sub">across all users</div>
     </div>
     <div class="card">
-      <div class="value" id="usersStreak7">–</div>
-      <div class="label">Users with 7+ day streak</div>
+      <div class="value" id="usersStreak21">–</div>
+      <div class="label">Users with 21+ day streak</div>
     </div>
   </div>
 </div>
@@ -323,7 +323,7 @@ exports.dashboard = (req, res) => {
       set('activeToday',   data.activeToday)
       set('longestStreak', data.longestStreak)
       set('avgStreak',     data.avgStreak)
-      set('usersStreak7',  data.usersStreak7)
+      set('usersStreak21', data.usersStreak21)
 
       const d = new Date(data.updatedAt)
       document.getElementById('updated-at').textContent =
@@ -354,7 +354,7 @@ exports.dashboard = (req, res) => {
     set('activeToday',   data.activeToday)
     set('longestStreak', data.longestStreak)
     set('avgStreak',     data.avgStreak)
-    set('usersStreak7',  data.usersStreak7)
+    set('usersStreak21', data.usersStreak21)
     const d = new Date(data.updatedAt)
     document.getElementById('updated-at').textContent =
       'Updated ' + d.toLocaleTimeString()

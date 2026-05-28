@@ -27,8 +27,8 @@ export default function HabitCard({ habit, openHabit }) {
   const isBroken  = streak === 0 && longest > 0 && lastCompletion !== null && lastCompletion < yesterday
 
   const isBuilding = habit.mode === 'building'
-  const trialDay   = Math.min(streak, 7)
-  const trialPct   = trialDay / 7
+  const trialDay   = Math.min(streak, 21)
+  const trialPct   = trialDay / 21
 
   const handleComplete = () => {
     if (done) return
@@ -41,7 +41,7 @@ export default function HabitCard({ habit, openHabit }) {
   const detailText = isBroken
     ? `Your ${longest}-day streak was your best. Start again.`
     : isBuilding
-      ? done ? `Day ${trialDay} of 7 · Done ✓` : `Day ${trialDay} of 7 · Building`
+      ? done ? `Day ${trialDay} of 21 · Done ✓` : `Day ${trialDay} of 21 · Building`
       : done ? `${habit.frequency || 'Daily'} · Done ✓` : habit.frequency || 'Daily'
 
   return (
@@ -133,15 +133,15 @@ export default function HabitCard({ habit, openHabit }) {
       {isBuilding && (
         <div className="px-4 pb-3">
           <div className="flex justify-between items-center mb-1.5">
-            <span className="text-[9px] text-zinc-600 uppercase tracking-widest">7-day trial</span>
+            <span className="text-[9px] text-zinc-600 uppercase tracking-widest">21-day trial</span>
             <span className="text-[9px] text-teal">
-              {trialDay === 7 ? 'Graduating soon! 🎓' : `${trialDay} / 7 days`}
+              {trialDay === 21 ? 'Graduating soon! 🎓' : `${trialDay} / 21 days`}
             </span>
           </div>
           <div className="h-1 bg-surface2 rounded-full overflow-hidden">
             <motion.div
               className="h-full rounded-full"
-              style={{ backgroundColor: trialDay === 7 ? '#DBAD28' : '#9CBD44' }}
+              style={{ backgroundColor: trialDay === 21 ? '#DBAD28' : '#9CBD44' }}
               initial={{ width: 0 }}
               animate={{ width: `${trialPct * 100}%` }}
               transition={{ duration: 0.6, ease: 'easeOut' }}

@@ -239,7 +239,7 @@ export default function BuilderWizard({ habitName, habitEmoji, onDone, onCancel 
               className="w-full py-4 rounded-[18px] bg-accent text-bg font-heading text-base"
               style={{ fontWeight: 800 }}
             >
-              {isLast ? 'Start my 7-day trial 🔥' : 'Next →'}
+              {isLast ? 'Start my 21-day trial 🔥' : 'Next →'}
             </motion.button>
           )}
         </AnimatePresence>

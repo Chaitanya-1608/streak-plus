@@ -43,7 +43,7 @@ export default function GraduationCeremony({ habit, onDone, isPreview = false })
     const identity = habit?.identityStatement
       ? ` I'm becoming someone who ${habit.identityStatement}.`
       : ''
-    const text = `I've been ${habit?.name || 'building my habit'} for 7 days straight.${identity} 🔥`
+    const text = `I've been ${habit?.name || 'building my habit'} for 21 days straight.${identity} 🔥`
     const shareData = { title: 'Streak+', text, url: window.location.href }
 
     if (navigator.share) {
@@ -105,7 +105,7 @@ export default function GraduationCeremony({ habit, onDone, isPreview = false })
         className="text-center"
       >
         <p className="text-[11px] text-teal uppercase tracking-widest mb-3">
-          7-day trial complete
+          21-day trial complete
         </p>
         <h1 className="font-heading text-[28px] text-white leading-tight mb-2">
           {habit?.emoji || '🔥'} {habit?.name || 'Your habit'}
@@ -147,7 +147,7 @@ export default function GraduationCeremony({ habit, onDone, isPreview = false })
         transition={{ delay: 0.85 }}
         whileTap={{ scale: isPreview ? 1 : 0.96 }}
         onClick={isPreview ? undefined : onDone}
-        title={isPreview ? 'This is a preview — graduation needs 7 real days' : undefined}
+        title={isPreview ? 'This is a preview — graduation needs 21 real days' : undefined}
         className="w-full max-w-[320px] py-4 rounded-[18px] bg-accent text-bg font-heading text-base"
         style={isPreview ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
       >

@@ -15,8 +15,12 @@ const MILESTONE_NAMES = {
   30: 'Warrior', 60: 'Champion', 100: 'Legend', 200: 'Master', 365: 'Obsidian',
 }
 
+const MILESTONE_EMOJI = {
+  7: '🌱', 14: '🔨', 21: '💪', 30: '⚔️', 60: '🏆', 100: '🌟', 200: '🔮', 365: '💎',
+}
+
 function nextMilestone(streak) {
-  return [7, 14, 21, 30, 60, 100, 200, 365].find(m => m > streak) || null
+  return [21, 30, 60, 100, 200, 365].find(m => m > streak) || null
 }
 
 // ── Streak ring ─────────────────────────────────────────────────────────────
@@ -336,8 +340,73 @@ function Toast({ message }) {
   )
 }
 
+// ── Milestone celebration bottom sheet ───────────────────────────────────────
+function MilestoneCelebration({ data, onClose }) {
+  const { habit, streak } = data
+  const name  = MILESTONE_NAMES[streak] || `${streak} days`
+  const badge = MILESTONE_EMOJI[streak] || '🎯'
+
+  const handleShare = () => {
+    const text = `${streak} days of ${habit.name}! I just hit the "${name}" milestone on Streak+. 🔥`
+    const payload = { title: 'Streak+', text, url: 'https://streak-plus.vercel.app/' }
+    if (navigator.share) {
+      navigator.share(payload).catch(() => {})
+    } else {
+      navigator.clipboard.writeText(`${text}\nhttps://streak-plus.vercel.app/`).catch(() => {})
+    }
+  }
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/80 z-40" onClick={onClose}
+      />
+      <motion.div
+        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 340, damping: 32 }}
+        className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-surface rounded-t-[28px] px-6 pt-6 pb-10 z-50"
+      >
+        <div className="w-10 h-1 rounded-full bg-surface2 mx-auto mb-6" />
+
+        <div className="text-center mb-7">
+          <div className="text-5xl mb-3">{habit.emoji || '🔥'}</div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 mb-4">
+            <span className="text-sm">{badge}</span>
+            <span className="text-accent text-xs font-medium tracking-wide">{name}</span>
+          </div>
+          <p className="font-heading text-[30px] text-white leading-tight">
+            {streak} days
+          </p>
+          <p className="font-heading text-[20px] text-accent leading-tight mb-3">
+            {habit.name}
+          </p>
+          <p className="text-zinc-500 text-sm leading-relaxed max-w-[260px] mx-auto">
+            Every action is a vote for the person you're becoming.
+          </p>
+        </div>
+
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          onClick={handleShare}
+          className="w-full py-4 rounded-[18px] bg-accent text-bg font-heading text-base mb-3"
+        >
+          Share this moment 🔗
+        </motion.button>
+        <button
+          onClick={onClose}
+          className="w-full py-3 rounded-[18px] bg-surface2 text-zinc-400 font-heading text-sm"
+        >
+          Keep going →
+        </button>
+      </motion.div>
+    </>
+  )
+}
+
 // ── Install banner (shown after user taps "Not now" on the install sheet) ────
 function InstallBanner({ onInstall }) {
+  if (window.matchMedia('(display-mode: standalone)').matches) return null
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
   return (
     <motion.div
@@ -369,6 +438,7 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
     getTodayCount, getTopStreak, getPersonalBest, getWeekSummary,
     checkGraduations, graduateHabit,
     checkGraceEligible, graceRecoverHabit,
+    checkMilestones, markMilestoneCelebrated,
   } = useHabitStore()
 
   const topStreak    = getTopStreak()
@@ -385,6 +455,7 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
 
   const [graceHabit, setGraceHabit] = useState(null)
   const [showGrace,  setShowGrace]  = useState(false)
+  const [milestone,  setMilestone]  = useState(null)
   const [toast,      setToast]      = useState('')
 
   const fireToast = (msg) => {
@@ -407,7 +478,7 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
   const buildHabits    = habits.filter(h => h.mode === 'building')
   const maintainHabits = habits.filter(h => h.mode !== 'building')
 
-  // Check for habits that just completed 7-day trial
+  // Check for habits that just completed 21-day trial
   useEffect(() => {
     const toGraduate = checkGraduations()
     if (toGraduate.length > 0) {
@@ -415,6 +486,15 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
       openGraduation(toGraduate[0])
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Check for maintaining-habit streak milestones after each completion
+  useEffect(() => {
+    const hit = checkMilestones()
+    if (hit) {
+      markMilestoneCelebrated(hit.habit.id, hit.streak)
+      setMilestone(hit)
+    }
+  }, [todayCount]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-screen bg-bg text-white">
@@ -454,7 +534,7 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
               onMouseLeave={cancelLongPress}
             >
               <p className="text-[11px] text-zinc-500 uppercase tracking-widest">Building 🌱</p>
-              <p className="text-[11px] text-teal">7-day trial</p>
+              <p className="text-[11px] text-teal">21-day trial</p>
             </div>
             <HabitList habits={buildHabits} openHabit={openHabit} />
           </>
@@ -515,6 +595,16 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
             habit={graceHabit}
             onRecover={handleGraceRecover}
             onDismiss={() => setShowGrace(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Milestone celebration */}
+      <AnimatePresence>
+        {milestone && (
+          <MilestoneCelebration
+            data={milestone}
+            onClose={() => setMilestone(null)}
           />
         )}
       </AnimatePresence>

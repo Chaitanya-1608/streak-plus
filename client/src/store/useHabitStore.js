@@ -188,7 +188,7 @@ const useHabitStore = create((set, get) => ({
     pushToCloud(habits, get().completions)
   },
 
-  // Flip a building habit to maintaining after 7-day trial
+  // Flip a building habit to maintaining after 21-day trial
   graduateHabit: (id) => {
     const habits = get().habits.map(h =>
       h.id === id ? { ...h, mode: 'maintaining', graduatedAt: TODAY() } : h
@@ -198,14 +198,36 @@ const useHabitStore = create((set, get) => ({
     pushToCloud(habits, get().completions)
   },
 
-  // Returns habits that have just hit 7-day streak and need graduation
+  // Returns habits that have just hit 21-day streak and need graduation
   checkGraduations: () => {
     const { habits, completions } = get()
     return habits.filter(h =>
       h.mode === 'building' &&
       !h.graduatedAt &&
-      computeStreak(completions[h.id] || []) >= 7
+      computeStreak(completions[h.id] || []) >= 21
     )
+  },
+
+  // Returns the first maintaining habit that just hit a streak milestone and hasn't been celebrated yet
+  checkMilestones: () => {
+    const { habits, completions, userEmail } = get()
+    const key = `streak-milestones-${userEmail || 'anon'}`
+    const celebrated = (() => { try { return JSON.parse(localStorage.getItem(key) || '{}') } catch { return {} } })()
+    for (const h of habits) {
+      if (h.mode !== 'maintaining') continue
+      const streak = computeStreak(completions[h.id] || [])
+      if ([7, 14, 21, 30, 60, 100, 200, 365].includes(streak) && !celebrated[`${h.id}_${streak}`]) {
+        return { habit: h, streak }
+      }
+    }
+    return null
+  },
+
+  markMilestoneCelebrated: (habitId, streak) => {
+    const key = `streak-milestones-${get().userEmail || 'anon'}`
+    const celebrated = (() => { try { return JSON.parse(localStorage.getItem(key) || '{}') } catch { return {} } })()
+    celebrated[`${habitId}_${streak}`] = true
+    localStorage.setItem(key, JSON.stringify(celebrated))
   },
 
   removeHabit: (id) => {

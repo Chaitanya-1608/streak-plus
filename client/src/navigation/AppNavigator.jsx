@@ -99,10 +99,12 @@ export default function AppNavigator() {
     setScreen('graduation')
   }
 
-  // DEV-only: preview the graduation ceremony without touching streak data
+  // Preview the graduation ceremony — uses the user's actual building habit if one exists
   const openPreviewGraduation = () => {
+    const { habits } = useHabitStore.getState()
+    const buildingHabit = habits.find(h => h.mode === 'building')
     setPreviewGrad(true)
-    setGraduatedHabit({
+    setGraduatedHabit(buildingHabit || {
       name: 'Morning Run',
       emoji: '🏃',
       identityStatement: 'shows up every day no matter what',

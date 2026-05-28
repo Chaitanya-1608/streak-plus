@@ -193,13 +193,97 @@ function FeedbackModal({ onClose }) {
   )
 }
 
+// ── Install modal ─────────────────────────────────────────────────────────────
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+
+function InstallModal({ onClose }) {
+  const hasNativePrompt = !isIOS && !!window.__deferredInstallPrompt
+
+  const handleNativeInstall = async () => {
+    const prompt = window.__deferredInstallPrompt
+    if (!prompt) return
+    prompt.prompt()
+    await prompt.userChoice
+    window.__deferredInstallPrompt = null
+    onClose()
+  }
+
+  const steps = isIOS
+    ? [
+        ['Tap the', 'Share button', '(box ↑ arrow) at the bottom of Safari'],
+        ['Scroll and tap', 'Add to Home Screen', ''],
+        ['Tap', 'Add', 'in the top right'],
+      ]
+    : [
+        ['Tap the', '⋮ menu', 'in the top-right of Chrome'],
+        ['Tap', 'Add to Home screen', 'or Install app'],
+        ['Tap', 'Add', 'to confirm'],
+      ]
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/80 z-40" onClick={onClose}
+      />
+      <motion.div
+        initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 340, damping: 32 }}
+        className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-surface rounded-t-[28px] px-6 pt-6 pb-10 z-50"
+      >
+        <div className="w-10 h-1 rounded-full bg-surface2 mx-auto mb-6" />
+
+        <div className="w-14 h-14 rounded-[18px] bg-gradient-to-br from-gold to-accent flex items-center justify-center text-2xl mx-auto mb-5 shadow-[0_0_20px_rgba(219,173,40,0.3)]">
+          🔥
+        </div>
+
+        <h2 className="font-heading text-[22px] text-white text-center mb-2">Install Streak+</h2>
+        <p className="text-zinc-500 text-sm text-center leading-relaxed mb-6">
+          Access your streaks instantly and get daily nudges — even offline.
+        </p>
+
+        {hasNativePrompt ? (
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={handleNativeInstall}
+            className="w-full py-4 rounded-[18px] bg-accent text-bg font-heading text-base mb-3"
+          >
+            Install now
+          </motion.button>
+        ) : (
+          <div className="bg-surface2 rounded-[20px] px-4 py-4 space-y-3 mb-6">
+            {steps.map(([pre, bold, post], i) => (
+              <div key={i} className="flex items-start gap-3">
+                <span className="w-5 h-5 rounded-full bg-accent/20 text-accent text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                  {i + 1}
+                </span>
+                <p className="text-zinc-400 text-sm leading-snug">
+                  {pre} <span className="text-white font-medium">{bold}</span> {post}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          onClick={onClose}
+          className="w-full py-3 rounded-[18px] bg-surface2 text-zinc-400 font-heading text-sm"
+        >
+          {hasNativePrompt ? 'Not now' : 'Got it'}
+        </button>
+      </motion.div>
+    </>
+  )
+}
+
 // ── Header ────────────────────────────────────────────────────────────────────
 export default function Header() {
   const name     = getUserName()
   const greeting = getGreeting()
   const initials = getInitials(name)
   const [menu,  setMenu]  = useState(false)
-  const [modal, setModal] = useState(null) // 'intention' | 'feedback'
+  const [modal, setModal] = useState(null) // 'intention' | 'feedback' | 'install'
+  const isInstalled = window.matchMedia('(display-mode: standalone)').matches
 
   const closeMenu = () => setMenu(false)
 
@@ -221,6 +305,10 @@ export default function Header() {
       },
       sub: `@${import.meta.env.VITE_INSTA_HANDLE || 'buildhabitswithcp'}`,
     },
+    ...(!isInstalled ? [{
+      icon: '📲', label: 'Install app',
+      action: () => { closeMenu(); setModal('install') },
+    }] : []),
     {
       icon: '🔗', label: 'Share Streak+',
       action: () => {
@@ -295,6 +383,7 @@ export default function Header() {
       <AnimatePresence>
         {modal === 'intention' && <IntentionModal onClose={() => setModal(null)} />}
         {modal === 'feedback'  && <FeedbackModal  onClose={() => setModal(null)} />}
+        {modal === 'install'   && <InstallModal   onClose={() => setModal(null)} />}
       </AnimatePresence>
     </>
   )

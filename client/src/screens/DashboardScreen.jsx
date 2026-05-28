@@ -410,7 +410,13 @@ function MilestoneCelebration({ data, onClose }) {
 // ── Install banner (shown after user taps "Not now" on the install sheet) ────
 function InstallBanner({ onInstall }) {
   if (window.matchMedia('(display-mode: standalone)').matches) return null
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  const isIOS           = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  const hasNativePrompt = !isIOS && !!window.__deferredInstallPrompt
+  const text = isIOS
+    ? 'Tap Share → Add to Home Screen to install.'
+    : hasNativePrompt
+      ? 'Add to home screen for offline access and daily nudges.'
+      : 'In Chrome, tap ⋮ → Add to Home screen to install.'
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -418,12 +424,8 @@ function InstallBanner({ onInstall }) {
       className="mt-4 flex items-center gap-3 px-4 py-3 rounded-[16px] bg-surface border border-surface2"
     >
       <span className="text-lg flex-shrink-0">📲</span>
-      <p className="flex-1 text-zinc-500 text-xs leading-snug">
-        {isIOS
-          ? 'Tap Share → Add to Home Screen to install Streak+.'
-          : 'Add to home screen for offline access and daily nudges.'}
-      </p>
-      {!isIOS && (
+      <p className="flex-1 text-zinc-500 text-xs leading-snug">{text}</p>
+      {hasNativePrompt && (
         <button
           onClick={onInstall}
           className="flex-shrink-0 px-3 py-1.5 rounded-[10px] bg-accent/15 text-accent text-xs font-medium"

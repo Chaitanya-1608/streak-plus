@@ -32,13 +32,24 @@ const persist = (email, habits, completions) => {
 const computeStreak = (dates) => {
   if (!dates.length) return 0
   const sorted = [...dates].sort().reverse()
+
+  const today = TODAY()
+  const prevDay = new Date(today + 'T12:00:00')
+  prevDay.setDate(prevDay.getDate() - 1)
+  const yesterday = localISO(prevDay)
+
+  // Streak is dead if last completion was before yesterday
+  if (sorted[0] < yesterday) return 0
+
+  // Start counting from most recent completion (today OR yesterday)
+  // so streak stays alive all day until midnight
   let streak = 0
-  let cursor = TODAY()
+  let cursor = sorted[0]
 
   for (const d of sorted) {
     if (d === cursor) {
       streak++
-      const prev = new Date(cursor + 'T12:00:00') // noon avoids DST edge cases
+      const prev = new Date(cursor + 'T12:00:00')
       prev.setDate(prev.getDate() - 1)
       cursor = localISO(prev)
     } else if (d < cursor) {

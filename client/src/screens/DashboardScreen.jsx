@@ -111,21 +111,24 @@ function WeekStrip({ weekSummary }) {
       <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-3">This week</p>
       <div className="flex justify-between">
         {weekSummary.map(({ date, completedCount, totalHabits }, i) => {
-          const isToday = date === TODAY_ISO
-          const isPast  = date < TODAY_ISO
-          const allDone = totalHabits > 0 && completedCount >= totalHabits
+          const isToday   = date === TODAY_ISO
+          const isPast    = date < TODAY_ISO
+          const allDone   = totalHabits > 0 && completedCount >= totalHabits
+          const someDone  = completedCount > 0 && !allDone
 
           return (
             <div key={date} className="flex flex-col items-center gap-1.5">
               <span className="text-[10px] text-zinc-600">{DAY_LABELS[i]}</span>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 text-sm font-bold ${
-                allDone  ? 'bg-accent text-bg'
-                : isToday ? 'border-2 border-accent/40 text-transparent'
-                : isPast  ? 'bg-surface2 text-transparent'
-                :           'bg-surface2 opacity-25 text-transparent'
+                allDone   ? 'bg-accent text-bg'
+                : someDone  ? 'bg-accent/20 text-transparent'
+                : isToday   ? 'border-2 border-accent/40 text-transparent'
+                : isPast    ? 'bg-surface2 text-transparent'
+                :             'bg-surface2 opacity-25 text-transparent'
               }`}>
                 {allDone ? '✓' : ''}
-                {isToday && !allDone ? <span className="w-1.5 h-1.5 rounded-full bg-accent/50 block" /> : null}
+                {someDone && !isToday ? <span className="w-1.5 h-1.5 rounded-full bg-accent/60 block" /> : null}
+                {isToday && !allDone && !someDone ? <span className="w-1.5 h-1.5 rounded-full bg-accent/50 block" /> : null}
               </div>
             </div>
           )

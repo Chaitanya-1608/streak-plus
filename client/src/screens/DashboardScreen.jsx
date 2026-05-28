@@ -501,7 +501,7 @@ export default function DashboardScreen({ openHabit, openBuilder, openGraduation
 
   return (
     <div className="min-h-screen bg-bg text-white">
-      <div className="max-w-md mx-auto px-5 pb-36 pt-safe">
+      <div className="max-w-md mx-auto px-5 pb-44 pt-safe">
         <Header />
         <p className="text-zinc-600 text-xs mt-1">
           {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}

@@ -4,11 +4,13 @@ import WelcomeScreen       from '../screens/WelcomeScreen'
 import OnboardingScreen    from '../screens/OnboardingScreen'
 import LoginScreen         from '../screens/LoginScreen'
 import DashboardScreen     from '../screens/DashboardScreen'
+import StatsScreen         from '../screens/StatsScreen'
 import HabitDetailScreen   from '../screens/HabitDetailScreen'
 import MilestoneScreen     from '../screens/MilestoneScreen'
 import GraduationCeremony  from '../screens/GraduationCeremony'
 import InstallPrompt       from '../components/ui/InstallPrompt'
 import BuilderWizard       from '../components/builder/BuilderWizard'
+import BottomTabBar        from '../components/core/BottomTabBar'
 import { scheduleNudges, isNotifEnabled } from '../utils/notifications'
 import useHabitStore       from '../store/useHabitStore'
 import { pushToCloud }     from '../utils/sync'
@@ -20,6 +22,7 @@ function initialScreen() {
 
 export default function AppNavigator() {
   const [screen,          setScreen]          = useState(initialScreen)
+  const [activeTab,       setActiveTab]        = useState('home')
   const [selectedHabit,   setSelectedHabit]   = useState(null)
   const [showInstall,      setShowInstall]      = useState(false)
   const [installDismissed, setInstallDismissed] = useState(
@@ -74,6 +77,7 @@ export default function AppNavigator() {
 
   const handleLogin = (email) => {
     useHabitStore.getState().loadForUser(email)
+    setActiveTab('home')
     setScreen('dashboard')
   }
 
@@ -121,7 +125,7 @@ export default function AppNavigator() {
         <LoginScreen onLogin={handleLogin} />
       )}
 
-      {screen === 'dashboard' && (
+      {screen === 'dashboard' && activeTab === 'home' && (
         <DashboardScreen
           openHabit={openHabit}
           openBuilder={openBuilder}
@@ -140,6 +144,14 @@ export default function AppNavigator() {
             }
           }}
         />
+      )}
+
+      {screen === 'dashboard' && activeTab === 'stats' && (
+        <StatsScreen />
+      )}
+
+      {screen === 'dashboard' && (
+        <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
       )}
 
       {screen === 'habit' && (

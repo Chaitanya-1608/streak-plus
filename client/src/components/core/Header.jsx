@@ -283,7 +283,6 @@ export default function Header() {
   const initials = getInitials(name)
   const [menu,  setMenu]  = useState(false)
   const [modal, setModal] = useState(null) // 'intention' | 'feedback' | 'install'
-  const isInstalled = window.matchMedia('(display-mode: standalone)').matches
 
   const closeMenu = () => setMenu(false)
 
@@ -305,10 +304,10 @@ export default function Header() {
       },
       sub: `@${import.meta.env.VITE_INSTA_HANDLE || 'buildhabitswithcp'}`,
     },
-    ...(!isInstalled ? [{
+    {
       icon: '📲', label: 'Install app',
       action: () => { closeMenu(); setModal('install') },
-    }] : []),
+    },
     {
       icon: '🔗', label: 'Share Streak+',
       action: () => {

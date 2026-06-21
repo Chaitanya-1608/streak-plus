@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const API_BASE = 'https://streak-plus-api.onrender.com/api'
@@ -484,6 +484,12 @@ export default function LoginScreen({ onLogin }) {
     // Default to sign-in if any user has registered before
     getUsers().length > 0 ? 'signin' : 'signup'
   )
+
+  // Pre-warm the Render server the moment this screen mounts so the cold-start
+  // completes before the user finishes typing and hits submit
+  useEffect(() => {
+    fetch('https://streak-plus-api.onrender.com/').catch(() => {})
+  }, [])
 
   return (
     <div className="min-h-screen bg-bg text-white flex flex-col px-6 py-12">

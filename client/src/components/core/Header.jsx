@@ -197,16 +197,7 @@ function FeedbackModal({ onClose }) {
 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
 
 function InstallModal({ onClose }) {
-  const hasNativePrompt = !isIOS && !!window.__deferredInstallPrompt
-
-  const handleNativeInstall = async () => {
-    const prompt = window.__deferredInstallPrompt
-    if (!prompt) return
-    prompt.prompt()
-    await prompt.userChoice
-    window.__deferredInstallPrompt = null
-    onClose()
-  }
+  const [showSteps, setShowSteps] = useState(false)
 
   const steps = isIOS
     ? [
@@ -219,6 +210,17 @@ function InstallModal({ onClose }) {
         ['Tap', 'Add to Home screen', 'or Install app'],
         ['Tap', 'Add', 'to confirm'],
       ]
+
+  const handleInstall = async () => {
+    const prompt = window.__deferredInstallPrompt
+    if (prompt) {
+      prompt.prompt()
+      const { outcome } = await prompt.userChoice
+      window.__deferredInstallPrompt = null
+      if (outcome === 'accepted') { onClose(); return }
+    }
+    setShowSteps(true)
+  }
 
   return (
     <>
@@ -237,39 +239,55 @@ function InstallModal({ onClose }) {
           🔥
         </div>
 
-        <h2 className="font-heading text-[22px] text-white text-center mb-2">Install Streak+</h2>
+        <h2 className="font-heading text-[22px] text-white text-center mb-2">
+          {showSteps ? 'How to install' : 'Install Streak+'}
+        </h2>
         <p className="text-zinc-500 text-sm text-center leading-relaxed mb-6">
-          Access your streaks instantly and get daily nudges — even offline.
+          {showSteps
+            ? 'Follow these steps to add Streak+ to your home screen.'
+            : 'Access your streaks instantly and get daily nudges — even offline.'}
         </p>
 
-        {hasNativePrompt ? (
-          <motion.button
-            whileTap={{ scale: 0.96 }}
-            onClick={handleNativeInstall}
-            className="w-full py-4 rounded-[18px] bg-accent text-bg font-heading text-base mb-3"
-          >
-            Install now
-          </motion.button>
-        ) : (
-          <div className="bg-surface2 rounded-[20px] px-4 py-4 space-y-3 mb-6">
-            {steps.map(([pre, bold, post], i) => (
-              <div key={i} className="flex items-start gap-3">
-                <span className="w-5 h-5 rounded-full bg-accent/20 text-accent text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                  {i + 1}
-                </span>
-                <p className="text-zinc-400 text-sm leading-snug">
-                  {pre} <span className="text-white font-medium">{bold}</span> {post}
-                </p>
+        <AnimatePresence mode="wait">
+          {showSteps ? (
+            <motion.div
+              key="steps"
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            >
+              <div className="bg-surface2 rounded-[20px] px-4 py-4 space-y-3 mb-6">
+                {steps.map(([pre, bold, post], i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-accent/20 text-accent text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                      {i + 1}
+                    </span>
+                    <p className="text-zinc-400 text-sm leading-snug">
+                      {pre} <span className="text-white font-medium">{bold}</span> {post}
+                    </p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="cta"
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            >
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={handleInstall}
+                className="w-full py-4 rounded-[18px] bg-accent text-bg font-heading text-base mb-3"
+              >
+                Install Streak+
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <button
           onClick={onClose}
           className="w-full py-3 rounded-[18px] bg-surface2 text-zinc-400 font-heading text-sm"
         >
-          {hasNativePrompt ? 'Not now' : 'Got it'}
+          {showSteps ? 'Got it' : 'Not now'}
         </button>
       </motion.div>
     </>
